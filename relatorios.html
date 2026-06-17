@@ -431,6 +431,31 @@
         </div>
       </div>
 
+      <!-- Ranking por cliente -->
+      <div class="chart-card" style="margin-bottom:1rem;">
+        <div class="chart-title">
+          Ranking de clientes
+          <span>por faturamento gerado</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="top-table" id="tabelaRankingClientes">
+            <thead>
+              <tr>
+                <th style="width:36px">#</th>
+                <th>Cliente</th>
+                <th style="text-align:center">Pedidos</th>
+                <th style="text-align:center">Itens</th>
+                <th style="text-align:right">Ticket médio</th>
+                <th style="text-align:right">Faturamento</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyRankingClientes">
+              <tr><td colspan="6" class="empty-dash">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Últimos pedidos -->
       <div class="chart-card">
         <div class="chart-title">
@@ -655,6 +680,7 @@
     renderChartRosca(entregues, pendentes);
     renderChartBarras(pedidos);
     renderTopFaturamento(pedidos);
+    renderRankingClientes(pedidos);
     renderTabelaRecentes(pedidos);
   }
 
@@ -829,6 +855,47 @@
         <td style="text-align:right;font-weight:600;color:var(--success)">${fmtBRL(val)}</td>
       </tr>`;
     }).join('') + '</tbody></table>';
+  }
+
+  /* ── RANKING CLIENTES ── */
+  function renderRankingClientes(pedidos) {
+    const map = {};
+    pedidos.forEach(p => {
+      const nome = p.cliente_nome || '—';
+      if (!map[nome]) map[nome] = { pedidos: 0, itens: 0, faturamento: 0 };
+      map[nome].pedidos++;
+      (p.SC6 || []).forEach(i => {
+        map[nome].itens       += i.quantidade || 0;
+        map[nome].faturamento += parseFloat(i.valor_total) || 0;
+      });
+    });
+
+    const sorted = Object.entries(map)
+      .sort((a, b) => b[1].faturamento - a[1].faturamento);
+    const max = sorted[0] ? sorted[0][1].faturamento : 1;
+    const tbody = document.getElementById('tbodyRankingClientes');
+
+    if (!sorted.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-dash">Sem dados no período.</div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = sorted.map(([nome, d], idx) => {
+      const ticket     = d.pedidos > 0 ? d.faturamento / d.pedidos : 0;
+      const pct        = Math.round(d.faturamento / max * 100);
+      const rankClass  = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-n';
+      return `<tr>
+        <td><span class="rank-badge ${rankClass}">${idx + 1}</span></td>
+        <td>
+          <div style="font-weight:500">${esc(nome)}</div>
+          <div class="bar-mini"><div class="bar-mini-fill" style="width:${pct}%"></div></div>
+        </td>
+        <td style="text-align:center;color:var(--accent);font-weight:600">${d.pedidos}</td>
+        <td style="text-align:center;color:var(--text-2)">${d.itens}</td>
+        <td style="text-align:right;color:var(--text-2)">${fmtBRL(ticket)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--success)">${fmtBRL(d.faturamento)}</td>
+      </tr>`;
+    }).join('');
   }
 
   /* ── TABELA RECENTES ── */

@@ -482,6 +482,54 @@
       .print-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; font-size: 9pt; color: #aaa; text-align: center; }
     }
 
+    /* ── MODAL WHATSAPP ── */
+    .wpp-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity var(--transition);
+    }
+    .wpp-overlay.open { opacity: 1; pointer-events: all; }
+    .wpp-modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); width: 100%; max-width: 420px;
+      padding: 1.75rem; box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      transform: translateY(20px) scale(.97); transition: transform var(--transition);
+    }
+    .wpp-overlay.open .wpp-modal { transform: translateY(0) scale(1); }
+    .wpp-icon {
+      width: 52px; height: 52px; border-radius: 50%;
+      background: rgba(37,211,102,.15); border: 1px solid rgba(37,211,102,.3);
+      display: flex; align-items: center; justify-content: center; margin: 0 auto 1.1rem;
+    }
+    .wpp-icon svg { width: 26px; height: 26px; }
+    .wpp-title { font-size: 16px; font-weight: 700; text-align: center; margin-bottom: .4rem; }
+    .wpp-sub   { font-size: 13px; color: var(--text-2); text-align: center; line-height: 1.5; margin-bottom: 1.25rem; }
+    .wpp-info  {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .85rem 1rem;
+      font-size: 12.5px; line-height: 1.7; color: var(--text-2);
+      margin-bottom: 1.25rem; white-space: pre-wrap; max-height: 180px; overflow-y: auto;
+    }
+    .wpp-info strong { color: var(--text); }
+    .wpp-btns { display: flex; gap: .75rem; }
+    .btn-wpp-sim {
+      flex: 1; padding: .75rem; border-radius: var(--radius);
+      background: #25d366; color: #fff; border: none;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background var(--transition);
+    }
+    .btn-wpp-sim:hover { background: #1ebe5d; }
+    .btn-wpp-sim svg { width: 18px; height: 18px; }
+    .btn-wpp-nao {
+      padding: .75rem 1.1rem; border-radius: var(--radius);
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-2); font-size: 13px; font-weight: 500; cursor: pointer;
+      transition: background var(--transition);
+    }
+    .btn-wpp-nao:hover { background: var(--border); color: var(--text); }
+
     /* TOAST */
     .toast-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; display: flex; flex-direction: column; gap: .5rem; }
     .toast {
@@ -893,6 +941,25 @@
 
 <!-- ÁREA DE IMPRESSÃO (visível só no print) -->
 <div id="printArea" style="display:none;"></div>
+
+<!-- MODAL WHATSAPP -->
+<div class="wpp-overlay" id="wppOverlay">
+  <div class="wpp-modal">
+    <div class="wpp-icon">
+      <svg viewBox="0 0 24 24" fill="#25d366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+    </div>
+    <div class="wpp-title">Notificar cliente pelo WhatsApp?</div>
+    <div class="wpp-sub" id="wppSub">Pedido salvo com sucesso! Deseja enviar uma confirmação para o cliente?</div>
+    <div class="wpp-info" id="wppPreview"></div>
+    <div class="wpp-btns">
+      <button class="btn-wpp-nao" onclick="fecharWpp()">Não agora</button>
+      <button class="btn-wpp-sim" onclick="abrirWhatsApp()">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Sim, enviar pelo WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
 
 <div class="toast-wrap" id="toastWrap"></div>
 
@@ -1373,11 +1440,16 @@ async function salvarPedido() {
 
   if (erroBaixa) {
     showToast('Pedido salvo, mas erro ao baixar estoque. Verifique os lançamentos.', 'error');
+    cancelarPedido();
   } else {
     showToast('Pedido salvo e estoque atualizado com sucesso!', 'success');
+    const snapCliente = { ...clienteSelecionado };
+    const snapItens   = [...itensPedido];
+    const snapTotal   = snapItens.reduce((s, i) => s + i.valor_total, 0);
+    cancelarPedido();
+    perguntarWhatsApp(pedidoId, snapCliente, snapItens, snapTotal);
   }
 
-  cancelarPedido();
   await carregarPedidos();
   await atualizarProximoCodigo();
 }
@@ -1628,6 +1700,56 @@ function imprimirPedido() {
   document.getElementById('printArea').style.display = 'none';
 }
 
+
+/* ── WHATSAPP ── */
+let _wppLink = '';
+
+function perguntarWhatsApp(pedidoId, cliente, itens, total) {
+  const celular = cliente.celular || '';
+  if (!celular) return; // sem número, não exibe
+
+  const codigo = '#' + String(pedidoId).padStart(5, '0');
+  const data   = new Date().toLocaleDateString('pt-BR');
+
+  const linhasItens = itens.map(i => {
+    const sub  = [i.tamanho, i.cor].filter(Boolean).join(' · ');
+    const desc = sub ? i.produto_nome + ' (' + sub + ')' : i.produto_nome;
+    const vt   = i.valor_total > 0 ? ' — ' + fmtBRL(i.valor_total) : '';
+    return '• ' + i.quantidade + 'x ' + desc + vt;
+  }).join('\n');
+
+  const totalLinha = total > 0 ? '\n\n*Total: ' + fmtBRL(total) + '*' : '';
+
+  const msg =
+    '🌸 *Flores Bruna* — Confirmação de Pedido\n\n' +
+    'Olá, *' + cliente.nome + '*! 😊\n' +
+    'Seu pedido *' + codigo + '* foi registrado com sucesso!\n\n' +
+    '*Itens:*\n' + linhasItens +
+    totalLinha + '\n\n' +
+    'Data: ' + data + '\n' +
+    'Qualquer dúvida, é só chamar! 🌷';
+
+  // formata número: remove não-dígitos, adiciona 55 se necessário
+  let num = celular.replace(/\D/g, '');
+  if (!num.startsWith('55')) num = '55' + num;
+
+  _wppLink = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+
+  document.getElementById('wppSub').textContent =
+    'Pedido ' + codigo + ' salvo! Enviar confirmação para ' + cliente.nome + '?';
+  document.getElementById('wppPreview').textContent = msg;
+  document.getElementById('wppOverlay').classList.add('open');
+}
+
+function fecharWpp() {
+  document.getElementById('wppOverlay').classList.remove('open');
+  _wppLink = '';
+}
+
+function abrirWhatsApp() {
+  if (_wppLink) window.open(_wppLink, '_blank');
+  fecharWpp();
+}
 
 /* ── TOAST ── */
 function showToast(msg, type = 'info') {
