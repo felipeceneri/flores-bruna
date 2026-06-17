@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
   <style>
     :root {
       --bg:        #0D0D0D;
@@ -262,6 +263,7 @@
   <!-- HERO -->
   <section class="hero">
     <div class="hero-bg"></div>
+    <div id="sparkles-hero" style="position:absolute;inset:0;z-index:0;pointer-events:none;"></div>
     <div class="hero-decor"></div>
     <div class="hero-content">
       <div class="hero-badge">
@@ -414,6 +416,38 @@
       if (sidebar) sidebar.classList.remove('open');
       if (overlay) overlay.classList.remove('open');
     }
+
+    /* ── SPARKLES ── */
+    (function initSparkles() {
+      if (typeof tsParticles === 'undefined') return;
+      tsParticles.load('sparkles-hero', {
+        fullScreen: { enable: false },
+        background: { color: { value: 'transparent' } },
+        fpsLimit: 60,
+        particles: {
+          number: { value: 120, density: { enable: true, area: 800 } },
+          color: { value: ['#C9A96E', '#ffffff', '#f0d9a8'] },
+          shape: { type: 'circle' },
+          opacity: {
+            value: { min: 0.1, max: 0.9 },
+            animation: { enable: true, speed: 1.2, minimumValue: 0.05, sync: false }
+          },
+          size: {
+            value: { min: 0.6, max: 1.4 },
+            animation: { enable: false }
+          },
+          move: {
+            enable: true,
+            speed: 0.6,
+            direction: 'none',
+            random: true,
+            straight: false,
+            outModes: { default: 'out' }
+          }
+        },
+        detectRetina: true
+      });
+    })();
   </script>
 </body>
 </html>
