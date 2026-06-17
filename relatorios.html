@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EstoqueApp — Relatórios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:       #0f1117; --surface: #1a1d27; --surface2: #222536;
+      --border:   #2e3250; --text: #e8eaf6; --text-2: #9fa3c0; --text-3: #5c6080;
+      --accent:   #4f6fff; --accent2: #6c8cff;
+      --success:  #22c55e; --danger: #ef4444; --warning: #f59e0b;
+      --radius:   12px; --shadow: 0 4px 24px rgba(0,0,0,.4);
+    }
+    [data-theme="light"] {
+      --bg: #f0f2f9; --surface: #ffffff; --surface2: #f5f6fc;
+      --border: #dde1f0; --text: #1a1d2e; --text-2: #5c6080; --text-3: #9fa3c0;
+      --shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+      display: flex; min-height: 100vh; overflow-x: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar { width: 220px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border); display: flex; flex-direction: column;
+      padding: .75rem .5rem; position: fixed; top: 0; left: 0; bottom: 0; overflow-y: auto; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: 10px; padding: .5rem .6rem 1rem; }
+    .logo-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 17px; height: 17px; stroke: #fff; fill: none; stroke-width: 2; }
+    .logo-name { font-size: 15px; font-weight: 700; color: var(--text); }
+    .logo-name span { color: var(--accent); }
+    .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase;
+      letter-spacing: 1px; padding: 0 .5rem; margin-bottom: .5rem; margin-top: 1.25rem; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: .55rem .75rem;
+      border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--text-2);
+      text-decoration: none; transition: background .15s, color .15s; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(79,111,255,.15); color: var(--accent); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: .75rem .5rem 0; border-top: 1px solid var(--border); }
+
+    /* ── MAIN ── */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { display: flex; align-items: center; justify-content: space-between;
+      padding: .85rem 1.5rem; background: var(--surface); border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 50; gap: 1rem; }
+    .topbar-left { display: flex; align-items: center; gap: .75rem; }
+    .hamburger { display: none; background: none; border: none; color: var(--text-2); cursor: pointer; padding: 4px; }
+    .page-title { font-size: 15px; font-weight: 700; color: var(--text); }
+    .page-breadcrumb { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .topbar-right { display: flex; align-items: center; gap: .75rem; }
+    #dbStatus { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-2);
+      background: var(--surface2); padding: 5px 10px; border-radius: 20px; border: 1px solid var(--border); }
+    .theme-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+      cursor: pointer; border-radius: 8px; padding: 6px; display: flex; }
+    .theme-toggle svg { width: 16px; height: 16px; }
+
+    /* ── CONTENT ── */
+    .content { padding: 1.5rem; flex: 1; }
+
+    /* ── FILTROS ── */
+    .filters-bar { display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .filters-bar h2 { font-size: 16px; font-weight: 700; color: var(--text); }
+    .period-tabs { display: flex; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 3px; gap: 2px; }
+    .period-tab { border: none; background: none; color: var(--text-2); font-size: 12px;
+      font-weight: 500; padding: 5px 12px; border-radius: 7px; cursor: pointer;
+      transition: background .15s, color .15s; font-family: inherit; }
+    .period-tab.active { background: var(--accent); color: #fff; }
+    .period-tab:hover:not(.active) { background: var(--surface2); color: var(--text); }
+
+    /* ── KPI CARDS ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.1rem 1.25rem; display: flex; flex-direction: column; gap: .4rem;
+      transition: transform .15s, box-shadow .15s; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+    .kpi-label { font-size: 11.5px; font-weight: 500; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
+    .kpi-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+    .kpi-value.green { color: var(--success); }
+    .kpi-value.red   { color: var(--danger); }
+    .kpi-value.blue  { color: var(--accent); }
+    .kpi-sub { font-size: 11px; color: var(--text-3); }
+    .kpi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center;
+      justify-content: center; margin-bottom: .2rem; }
+    .kpi-icon svg { width: 18px; height: 18px; }
+    .kpi-icon.purple { background: rgba(79,111,255,.15); color: var(--accent); }
+    .kpi-icon.green  { background: rgba(34,197,94,.12); color: var(--success); }
+    .kpi-icon.red    { background: rgba(239,68,68,.12); color: var(--danger); }
+    .kpi-icon.orange { background: rgba(245,158,11,.12); color: var(--warning); }
+
+    /* ── CHARTS GRID ── */
+    .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .charts-row-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.25rem; }
+    .chart-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 1rem;
+      display: flex; align-items: center; justify-content: space-between; }
+    .chart-title span { font-size: 11px; color: var(--text-3); font-weight: 400; }
+    .chart-wrap { position: relative; width: 100%; }
+    .chart-wrap canvas { max-width: 100%; }
+
+    /* ── TOP PRODUTOS TABLE ── */
+    .top-table { width: 100%; border-collapse: collapse; }
+    .top-table th { font-size: 10.5px; font-weight: 600; color: var(--text-3); text-transform: uppercase;
+      letter-spacing: .4px; padding: .4rem .6rem; border-bottom: 1px solid var(--border); text-align: left; }
+    .top-table td { padding: .6rem .6rem; font-size: 12.5px; color: var(--text);
+      border-bottom: 1px solid var(--border); }
+    .top-table tr:last-child td { border-bottom: none; }
+    .top-table tr:hover td { background: var(--surface2); }
+    .rank-badge { width: 22px; height: 22px; border-radius: 50%; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 10px; font-weight: 700; }
+    .rank-1 { background: rgba(245,158,11,.2); color: var(--warning); }
+    .rank-2 { background: rgba(156,163,175,.15); color: #9ca3af; }
+    .rank-3 { background: rgba(180,120,60,.15); color: #b47c3c; }
+    .rank-n { background: var(--surface2); color: var(--text-3); }
+    .bar-mini { height: 5px; border-radius: 3px; background: rgba(79,111,255,.3); margin-top: 3px; }
+    .bar-mini-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width .4s; }
+
+    /* ── ÚLTIMOS PEDIDOS ── */
+    .recentes-table { width: 100%; border-collapse: collapse; }
+    .recentes-table th { font-size: 10.5px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .4px; padding: .5rem .75rem;
+      border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    .recentes-table td { padding: .6rem .75rem; font-size: 12.5px; color: var(--text);
+      border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .recentes-table tr:last-child td { border-bottom: none; }
+    .recentes-table tr:hover td { background: var(--surface2); }
+    .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600;
+      padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+    .pill-green { background: rgba(34,197,94,.1); color: #16a34a; border: 1px solid rgba(34,197,94,.25); }
+    .pill-red   { background: rgba(239,68,68,.1); color: #dc2626; border: 1px solid rgba(239,68,68,.25); }
+    .code-tag { font-weight: 700; color: var(--accent); font-size: 12px; }
+
+    /* ── EMPTY / LOADING ── */
+    .empty-dash { text-align: center; padding: 3rem 1rem; color: var(--text-3); font-size: 13px; }
+    .skeleton { background: var(--surface2); border-radius: 6px; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    /* ── ALERT SEM BANCO ── */
+    .alert-sem-banco { background: rgba(245,158,11,.08); border: 1px solid rgba(245,158,11,.3);
+      border-radius: var(--radius); padding: 1rem 1.25rem; display: none; align-items: center;
+      gap: .75rem; font-size: 13px; color: var(--text-2); margin-bottom: 1.5rem; }
+    .alert-sem-banco.show { display: flex; }
+    .alert-sem-banco svg { flex-shrink: 0; color: var(--warning); }
+
+    /* ── FILTRO CLIENTE ── */
+    .client-filter-wrap { position: relative; min-width: 230px; }
+    .client-filter-input { width: 100%; background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-family: inherit; font-size: 13px; padding: .45rem .85rem .45rem 2rem;
+      border-radius: 8px; outline: none; transition: border-color .15s; }
+    .client-filter-input:focus { border-color: var(--accent); }
+    .client-filter-icon { position: absolute; left: .6rem; top: 50%; transform: translateY(-50%);
+      pointer-events: none; color: var(--text-3); width: 14px; height: 14px; }
+    .client-filter-clear { position: absolute; right: .5rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--text-3); cursor: pointer; display: none;
+      padding: 2px; line-height: 1; border-radius: 4px; }
+    .client-filter-clear:hover { color: var(--text); background: var(--surface2); }
+    .client-filter-clear svg { width: 13px; height: 13px; display: block; }
+    .client-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: var(--shadow); max-height: 220px; overflow-y: auto; z-index: 200; display: none; }
+    .client-dropdown.open { display: block; }
+    .client-dropdown-item { padding: .5rem .85rem; font-size: 13px; cursor: pointer;
+      color: var(--text); transition: background .12s; white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; }
+    .client-dropdown-item:hover, .client-dropdown-item.hl { background: var(--surface2); }
+    .client-dropdown-item strong { color: var(--accent); font-weight: 600; }
+    .client-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(79,111,255,.12);
+      border: 1px solid rgba(79,111,255,.3); color: var(--accent); font-size: 11px; font-weight: 600;
+      padding: 3px 10px 3px 8px; border-radius: 20px; cursor: pointer; }
+    .client-badge:hover { background: rgba(79,111,255,.2); }
+    .client-badge svg { width: 11px; height: 11px; }
+    .filters-info { font-size: 11.5px; color: var(--text-3); margin-top: .5rem;
+      display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-row, .charts-row-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); transition: transform .25s; }
+      .sidebar.open { transform: translateX(0); box-shadow: var(--shadow); }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── MODO MOBILE ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 98; cursor: pointer;
+    }
+    [data-device="mobile"] .sidebar-overlay.open { display: block; }
+    [data-device="mobile"] .sidebar { transform: translateX(-100%); transition: transform .25s; }
+    [data-device="mobile"] .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.5); }
+    [data-device="mobile"] .main { margin-left: 0 !important; }
+    [data-device="mobile"] .hamburger { display: flex !important; }
+    [data-device="mobile"] .form-row { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .page-layout,
+    [data-device="mobile"] .cadastro-layout { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .btn-action { min-height: 38px; padding: .45rem .85rem !important; font-size: 12px; }
+    [data-device="mobile"] .btn-icon,
+    [data-device="mobile"] .btn-edit { min-width: 38px; min-height: 38px; padding: 8px !important; }
+    [data-device="mobile"] .form-input,
+    [data-device="mobile"] .form-select { font-size: 16px !important; padding: .75rem 1rem !important; }
+    [data-device="mobile"] .lista-table-wrap,
+    [data-device="mobile"] .modal-det-body { overflow-x: auto; }
+    [data-device="mobile"] .modal-det-inner { margin: .5rem; max-width: calc(100vw - 1rem) !important; border-radius: 12px; }
+    [data-device="mobile"] .det-client-grid { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .period-tab { padding: 7px 10px !important; min-height: 34px; }
+    [data-device="mobile"] .client-filter-wrap { min-width: 100% !important; }
+    [data-device="mobile"] .filters-bar { flex-direction: column; align-items: flex-start !important; }
+    [data-device="mobile"] .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    [data-device="mobile"] .charts-row,
+    [data-device="mobile"] .charts-row-3 { grid-template-columns: 1fr !important; }
+    .device-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+      cursor: pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center;
+      justify-content: center; transition: background .15s, color .15s; }
+    .device-toggle:hover { background: var(--border); color: var(--text); }
+    .device-toggle svg { width: 16px; height: 16px; display: block; }
+    .device-toggle.mobile-active { background: rgba(79,111,255,.15); color: var(--accent); border-color: rgba(79,111,255,.4); }
+  </style>
+</head>
+<body>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="fecharSidebarMobile()"></div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14L4 17m8 4V11"/></svg>
+      </div>
+      <span class="logo-name">Estoque<span>App</span></span>
+    </div>
+
+    <span class="nav-label">Menu</span>
+    <a class="nav-item" href="produtos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Produtos
+    </a>
+    <a class="nav-item" href="lancamento.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H5a2 2 0 00-2 2v2h18v-2a2 2 0 00-2-2h-4M12 3v10m0 0l-3-3m3 3l3-3"/></svg>
+      Lançamento
+    </a>
+    <a class="nav-item" href="clientes.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Clientes
+    </a>
+    <a class="nav-item" href="pedidos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Pedidos
+    </a>
+    <a class="nav-item active" href="relatorios.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Relatórios
+    </a>
+
+    <span class="nav-label">Config</span>
+    <a class="nav-item" href="produtos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Configurações
+    </a>
+
+    <div class="sidebar-footer">
+      <a href="Flores_Bruna.html" class="nav-item" style="font-size:12px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Página inicial
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebarMobile()" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="page-title">Relatórios de Vendas</div>
+          <div class="page-breadcrumb">EstoqueApp › Relatórios</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div id="dbStatus">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--text-3);display:inline-block;" id="dbDot"></span>
+          <span id="dbLabel">Sem banco</span>
+        </div>
+        <button class="device-toggle" id="deviceToggle" onclick="toggleDevice()" title="Alternar modo de visualização">
+          <svg id="iconDesktop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <svg id="iconMobile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </button>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+          <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- Alerta sem banco -->
+      <div class="alert-sem-banco" id="alertSemBanco">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Configure a conexão com o Supabase para visualizar os dados. Acesse Configurações e informe a URL e a chave de API.
+      </div>
+
+      <!-- Filtros -->
+      <div class="filters-bar">
+        <div>
+          <h2 id="dashTitle">Visão geral de vendas</h2>
+          <div class="filters-info" id="filtersInfo" style="display:none;">
+            <span>Filtrando por:</span>
+            <span class="client-badge" id="clienteBadge" onclick="limparFiltroCliente()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+              <span id="clienteBadgeName"></span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;">
+          <!-- Filtro cliente -->
+          <div class="client-filter-wrap" id="clienteFilterWrap">
+            <svg class="client-filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <input class="client-filter-input" id="clienteFilterInput" type="text"
+              placeholder="Filtrar por cliente..."
+              oninput="onFiltroClienteInput(this.value)"
+              onfocus="abrirDropdownCliente()"
+              onkeydown="navDropdownCliente(event)" autocomplete="off" />
+            <button class="client-filter-clear" id="clienteFilterClear" onclick="limparFiltroCliente()" title="Limpar filtro">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="client-dropdown" id="clienteDropdown"></div>
+          </div>
+          <!-- Filtro período -->
+          <div class="period-tabs" id="periodTabs">
+            <button class="period-tab" data-days="7"  onclick="setPeriodo(7)">7 dias</button>
+            <button class="period-tab active" data-days="30" onclick="setPeriodo(30)">30 dias</button>
+            <button class="period-tab" data-days="90" onclick="setPeriodo(90)">90 dias</button>
+            <button class="period-tab" data-days="0"  onclick="setPeriodo(0)">Todos</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+          </div>
+          <div class="kpi-label">Total de Pedidos</div>
+          <div class="kpi-value blue" id="kpiTotal">—</div>
+          <div class="kpi-sub" id="kpiTotalSub">no período</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+          <div class="kpi-label">Faturamento Total</div>
+          <div class="kpi-value green" id="kpiFaturamento">—</div>
+          <div class="kpi-sub" id="kpiFatSub">em vendas</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="kpi-label">Pedidos Entregues</div>
+          <div class="kpi-value green" id="kpiEntregues">—</div>
+          <div class="kpi-sub" id="kpiEntSub">concluídos</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-icon red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="kpi-label">Pendentes de Entrega</div>
+          <div class="kpi-value red" id="kpiPendentes">—</div>
+          <div class="kpi-sub" id="kpiPendSub">aguardando</div>
+        </div>
+      </div>
+
+      <!-- Gráficos linha + rosca -->
+      <div class="charts-row-3">
+        <div class="chart-card">
+          <div class="chart-title">
+            Faturamento por dia
+            <span id="labelPeriodoLinha"></span>
+          </div>
+          <div class="chart-wrap" style="height:220px">
+            <canvas id="chartLinha"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Status dos Pedidos</div>
+          <div class="chart-wrap" style="height:220px;display:flex;align-items:center;justify-content:center;">
+            <canvas id="chartRosca" style="max-height:200px;max-width:200px;"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Produtos mais vendidos + Ticket médio -->
+      <div class="charts-row">
+        <div class="chart-card">
+          <div class="chart-title">
+            Top 8 produtos mais vendidos
+            <span>por quantidade</span>
+          </div>
+          <div class="chart-wrap" style="height:240px">
+            <canvas id="chartBarras"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Ranking por faturamento
+            <span>R$ gerado</span>
+          </div>
+          <div id="topFaturamentoList" style="overflow-y:auto;max-height:240px;">
+            <div class="empty-dash">Carregando...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Últimos pedidos -->
+      <div class="chart-card">
+        <div class="chart-title">
+          Últimos pedidos
+          <span id="labelUltimosPedidos"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="recentes-table" id="tabelaRecentes">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Data</th>
+                <th style="text-align:right">Valor</th>
+                <th>Status</th>
+                <th>Itens</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyRecentes">
+              <tr><td colspan="6" class="empty-dash">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+
+<script>
+  /* ── SUPABASE CONFIG ── */
+  const SUPABASE_URL = localStorage.getItem('sb_url') || '';
+  const SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+  let sb = null;
+
+  function initSupabase() {
+    if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+    try {
+      const { createClient } = supabase;
+      sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+      document.getElementById('dbDot').style.background = '#22c55e';
+      document.getElementById('dbLabel').textContent = 'Conectado';
+      return true;
+    } catch(e) {
+      document.getElementById('dbLabel').textContent = 'Erro de conexão';
+      return false;
+    }
+  }
+
+  /* ── THEME ── */
+  (function() {
+    const t = localStorage.getItem('theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    if (t === 'light') {
+      document.getElementById('iconMoon').style.display = 'none';
+      document.getElementById('iconSun').style.display  = '';
+    }
+    initDevice();
+  })();
+  function toggleTheme() {
+    const t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+    localStorage.setItem('theme', t);
+    document.getElementById('iconMoon').style.display = t === 'dark'  ? '' : 'none';
+    document.getElementById('iconSun').style.display  = t === 'light' ? '' : 'none';
+    atualizarCoresCharts();
+  }
+
+  /* ── ESTADO ── */
+  let todosOsPedidos  = [];
+  let periodoAtual    = 30;
+  let clienteFiltro   = '';   // nome exato selecionado; '' = todos
+  let hlCliente       = -1;
+  let chartLinha = null, chartRosca = null, chartBarras = null;
+
+  /* ── FILTRAR POR PERÍODO ── */
+  function setPeriodo(dias) {
+    periodoAtual = dias;
+    document.querySelectorAll('.period-tab').forEach(t => t.classList.toggle('active', Number(t.dataset.days) === dias));
+    renderDashboard();
+  }
+
+  function filtrarPorPeriodo(pedidos) {
+    if (periodoAtual === 0) return pedidos;
+    const limite = new Date();
+    limite.setDate(limite.getDate() - periodoAtual);
+    return pedidos.filter(p => p.data_pedido && new Date(p.data_pedido) >= limite);
+  }
+
+  function filtrarPorCliente(pedidos) {
+    if (!clienteFiltro) return pedidos;
+    return pedidos.filter(p => p.cliente_nome === clienteFiltro);
+  }
+
+  function aplicarFiltros() {
+    return filtrarPorCliente(filtrarPorPeriodo(todosOsPedidos));
+  }
+
+  /* ── AUTOCOMPLETE CLIENTE ── */
+  function listaClientes() {
+    const nomes = [...new Set(todosOsPedidos.map(p => p.cliente_nome).filter(Boolean))].sort();
+    return nomes;
+  }
+
+  function onFiltroClienteInput(valor) {
+    clienteFiltro = '';
+    atualizarBadgeCliente();
+    abrirDropdownCliente(valor);
+  }
+
+  function abrirDropdownCliente(termo) {
+    const input = document.getElementById('clienteFilterInput');
+    const busca = (termo !== undefined ? termo : input.value).toLowerCase().trim();
+    const todos = listaClientes();
+    const filtrados = busca ? todos.filter(n => n.toLowerCase().includes(busca)) : todos;
+    const dd = document.getElementById('clienteDropdown');
+    hlCliente = -1;
+
+    if (!filtrados.length) { dd.classList.remove('open'); return; }
+
+    dd.innerHTML = filtrados.map((n, i) => {
+      const nEsc    = esc(n);
+      const buscaEsc = busca.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const destaque = busca
+        ? nEsc.replace(new RegExp(`(${buscaEsc})`, 'gi'), '<strong>$1</strong>')
+        : nEsc;
+      return `<div class="client-dropdown-item" data-nome="${esc(n)}" onclick="selecionarCliente('${esc(n)}')">${destaque}</div>`;
+    }).join('');
+    dd.classList.add('open');
+  }
+
+  function selecionarCliente(nome) {
+    clienteFiltro = nome;
+    document.getElementById('clienteFilterInput').value = nome;
+    document.getElementById('clienteDropdown').classList.remove('open');
+    atualizarBadgeCliente();
+    renderDashboard();
+  }
+
+  function limparFiltroCliente() {
+    clienteFiltro = '';
+    document.getElementById('clienteFilterInput').value = '';
+    document.getElementById('clienteDropdown').classList.remove('open');
+    atualizarBadgeCliente();
+    renderDashboard();
+  }
+
+  function atualizarBadgeCliente() {
+    const clearBtn  = document.getElementById('clienteFilterClear');
+    const badge     = document.getElementById('filtersInfo');
+    const badgeName = document.getElementById('clienteBadgeName');
+    const title     = document.getElementById('dashTitle');
+
+    if (clienteFiltro) {
+      clearBtn.style.display  = 'flex';
+      badge.style.display     = 'flex';
+      badgeName.textContent   = clienteFiltro;
+      title.textContent       = 'Vendas — ' + clienteFiltro;
+    } else {
+      clearBtn.style.display  = 'none';
+      badge.style.display     = 'none';
+      title.textContent       = 'Visão geral de vendas';
+    }
+  }
+
+  function navDropdownCliente(e) {
+    const dd    = document.getElementById('clienteDropdown');
+    const items = dd.querySelectorAll('.client-dropdown-item');
+    if (!dd.classList.contains('open') || !items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); hlCliente = Math.min(hlCliente + 1, items.length - 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); hlCliente = Math.max(hlCliente - 1, 0); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (hlCliente >= 0) items[hlCliente].click(); return; }
+    else if (e.key === 'Escape') { dd.classList.remove('open'); return; }
+    items.forEach((el, i) => el.classList.toggle('hl', i === hlCliente));
+    if (hlCliente >= 0) items[hlCliente].scrollIntoView({ block: 'nearest' });
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#clienteFilterWrap'))
+      document.getElementById('clienteDropdown').classList.remove('open');
+  });
+
+  /* ── CARREGAR DADOS ── */
+  async function carregarDados() {
+    if (!sb) return;
+    const { data, error } = await sb
+      .from('SC5')
+      .select('id, cliente_nome, data_pedido, entregue, SC6(quantidade, valor_total, produto_nome)')
+      .order('data_pedido', { ascending: false });
+    if (error) { console.error(error); return; }
+    todosOsPedidos = data || [];
+    renderDashboard();
+  }
+
+  /* ── RENDER DASHBOARD ── */
+  function renderDashboard() {
+    const pedidos = aplicarFiltros();
+
+    // KPIs
+    const total      = pedidos.length;
+    const entregues  = pedidos.filter(p => p.entregue).length;
+    const pendentes  = total - entregues;
+    const faturamento = pedidos.reduce((s, p) => {
+      return s + (p.SC6 || []).reduce((si, i) => si + (parseFloat(i.valor_total) || 0), 0);
+    }, 0);
+
+    document.getElementById('kpiTotal').textContent       = total;
+    document.getElementById('kpiFaturamento').textContent = fmtBRL(faturamento);
+    document.getElementById('kpiEntregues').textContent   = entregues;
+    document.getElementById('kpiPendentes').textContent   = pendentes;
+    const subPeriodo = periodoAtual === 0 ? 'no total' : `últimos ${periodoAtual} dias`;
+    const subCliente = clienteFiltro ? ` · ${clienteFiltro}` : '';
+    document.getElementById('kpiTotalSub').textContent = subPeriodo + subCliente;
+    document.getElementById('kpiFatSub').textContent   = subPeriodo + subCliente;
+    document.getElementById('kpiEntSub').textContent      = `${total > 0 ? Math.round(entregues/total*100) : 0}% do total`;
+    document.getElementById('kpiPendSub').textContent     = `${total > 0 ? Math.round(pendentes/total*100) : 0}% pendente`;
+
+    // Label período linha
+    document.getElementById('labelPeriodoLinha').textContent =
+      periodoAtual === 0 ? 'todo o período' : `últimos ${periodoAtual} dias`;
+
+    renderChartLinha(pedidos);
+    renderChartRosca(entregues, pendentes);
+    renderChartBarras(pedidos);
+    renderTopFaturamento(pedidos);
+    renderTabelaRecentes(pedidos);
+  }
+
+  /* ── CORES DINÂMICAS ── */
+  function cssVar(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  /* ── CHART LINHA: faturamento por dia ── */
+  function renderChartLinha(pedidos) {
+    // Agrupa por data
+    const map = {};
+    pedidos.forEach(p => {
+      if (!p.data_pedido) return;
+      const d = p.data_pedido;
+      if (!map[d]) map[d] = 0;
+      map[d] += (p.SC6 || []).reduce((s, i) => s + (parseFloat(i.valor_total) || 0), 0);
+    });
+
+    // Preenche dias sem venda no intervalo
+    let labels = [], values = [];
+    if (periodoAtual > 0) {
+      for (let i = periodoAtual - 1; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = d.toISOString().slice(0, 10);
+        labels.push(d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }));
+        values.push(map[key] || 0);
+      }
+    } else {
+      const sorted = Object.keys(map).sort();
+      sorted.forEach(k => {
+        labels.push(new Date(k + 'T00:00:00').toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit' }));
+        values.push(map[k]);
+      });
+    }
+
+    const ctx = document.getElementById('chartLinha').getContext('2d');
+    const accentColor = '#4f6fff';
+    const gridColor   = cssVar('--border');
+    const textColor   = cssVar('--text-3');
+
+    if (chartLinha) chartLinha.destroy();
+    chartLinha = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Faturamento (R$)',
+          data: values,
+          borderColor: accentColor,
+          backgroundColor: 'rgba(79,111,255,.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: values.length > 30 ? 0 : 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: accentColor,
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: {
+          callbacks: { label: ctx => ' ' + fmtBRL(ctx.raw) }
+        }},
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 },
+            maxTicksLimit: 10 } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 },
+            callback: v => 'R$ ' + v.toLocaleString('pt-BR') } }
+        }
+      }
+    });
+  }
+
+  /* ── CHART ROSCA: status ── */
+  function renderChartRosca(entregues, pendentes) {
+    const ctx = document.getElementById('chartRosca').getContext('2d');
+    if (chartRosca) chartRosca.destroy();
+    chartRosca = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Entregues', 'Pendentes'],
+        datasets: [{
+          data: [entregues, pendentes],
+          backgroundColor: ['rgba(34,197,94,.8)', 'rgba(239,68,68,.7)'],
+          borderColor: [cssVar('--surface'), cssVar('--surface')],
+          borderWidth: 3,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { position: 'bottom', labels: { color: cssVar('--text-2'), font: { size: 11 },
+            padding: 12, usePointStyle: true, pointStyleWidth: 8 }},
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` }}
+        }
+      }
+    });
+  }
+
+  /* ── CHART BARRAS: top produtos ── */
+  function renderChartBarras(pedidos) {
+    const map = {};
+    pedidos.forEach(p => {
+      (p.SC6 || []).forEach(i => {
+        if (!map[i.produto_nome]) map[i.produto_nome] = 0;
+        map[i.produto_nome] += i.quantidade || 0;
+      });
+    });
+    const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    const labels = sorted.map(([n]) => n.length > 18 ? n.slice(0,16) + '…' : n);
+    const values = sorted.map(([,v]) => v);
+
+    const ctx = document.getElementById('chartBarras').getContext('2d');
+    const gridColor = cssVar('--border');
+    const textColor = cssVar('--text-3');
+
+    if (chartBarras) chartBarras.destroy();
+    chartBarras = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Qtd. vendida',
+          data: values,
+          backgroundColor: 'rgba(79,111,255,.7)',
+          borderRadius: 6,
+          borderSkipped: false,
+          hoverBackgroundColor: 'rgba(79,111,255,1)',
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } },
+          y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 },
+            stepSize: 1 } }
+        }
+      }
+    });
+  }
+
+  /* ── TOP FATURAMENTO (lista) ── */
+  function renderTopFaturamento(pedidos) {
+    const map = {};
+    pedidos.forEach(p => {
+      (p.SC6 || []).forEach(i => {
+        if (!map[i.produto_nome]) map[i.produto_nome] = 0;
+        map[i.produto_nome] += parseFloat(i.valor_total) || 0;
+      });
+    });
+    const sorted = Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0, 8);
+    const max = sorted[0] ? sorted[0][1] : 1;
+    const el = document.getElementById('topFaturamentoList');
+
+    if (!sorted.length) { el.innerHTML = '<div class="empty-dash">Sem dados no período.</div>'; return; }
+
+    el.innerHTML = `<table class="top-table"><thead><tr>
+      <th>#</th><th>Produto</th><th style="text-align:right">Faturamento</th>
+    </tr></thead><tbody>` +
+    sorted.map(([nome, val], idx) => {
+      const pct = Math.round(val / max * 100);
+      const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-n';
+      return `<tr>
+        <td><span class="rank-badge ${rankClass}">${idx+1}</span></td>
+        <td>
+          <div style="font-weight:500">${esc(nome)}</div>
+          <div class="bar-mini"><div class="bar-mini-fill" style="width:${pct}%"></div></div>
+        </td>
+        <td style="text-align:right;font-weight:600;color:var(--success)">${fmtBRL(val)}</td>
+      </tr>`;
+    }).join('') + '</tbody></table>';
+  }
+
+  /* ── TABELA RECENTES ── */
+  function renderTabelaRecentes(pedidos) {
+    const tbody = document.getElementById('tbodyRecentes');
+    const label = document.getElementById('labelUltimosPedidos');
+    const lista  = pedidos.slice(0, 15);
+    label.textContent = `${lista.length} de ${pedidos.length} pedido${pedidos.length !== 1 ? 's' : ''}`;
+
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="6"><div class="empty-dash">Nenhum pedido no período selecionado.</div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = lista.map(p => {
+      const total = (p.SC6 || []).reduce((s, i) => s + (parseFloat(i.valor_total) || 0), 0);
+      const data  = p.data_pedido ? new Date(p.data_pedido + 'T00:00:00').toLocaleDateString('pt-BR') : '—';
+      const nItens = (p.SC6 || []).reduce((s, i) => s + (i.quantidade || 0), 0);
+      const statusHtml = p.entregue
+        ? `<span class="pill pill-green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="10" height="10"><polyline points="20 6 9 17 4 12"/></svg>Entregue</span>`
+        : `<span class="pill pill-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Pendente</span>`;
+      return `<tr>
+        <td class="code-tag">#${String(p.id).padStart(5,'0')}</td>
+        <td style="font-weight:500">${esc(p.cliente_nome)}</td>
+        <td style="color:var(--text-2)">${data}</td>
+        <td style="text-align:right;font-weight:600;color:var(--success)">${total > 0 ? fmtBRL(total) : '—'}</td>
+        <td>${statusHtml}</td>
+        <td style="color:var(--text-2)">${nItens} un.</td>
+      </tr>`;
+    }).join('');
+  }
+
+  /* ── ATUALIZAR CORES DOS CHARTS AO TROCAR TEMA ── */
+  function atualizarCoresCharts() {
+    if (todosOsPedidos.length) renderDashboard();
+  }
+
+  /* ── HELPERS ── */
+  function fmtBRL(v) {
+    return 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── MODO DISPOSITIVO ── */
+  function initDevice() {
+    const d = localStorage.getItem('device-mode') || 'desktop';
+    document.documentElement.setAttribute('data-device', d);
+    const btn = document.getElementById('deviceToggle');
+    if (btn) btn.classList.toggle('mobile-active', d === 'mobile');
+    document.getElementById('iconDesktop').style.display = d === 'mobile' ? 'none' : 'block';
+    document.getElementById('iconMobile').style.display  = d === 'mobile' ? 'block' : 'none';
+  }
+  function toggleDevice() {
+    const cur  = document.documentElement.getAttribute('data-device') || 'desktop';
+    const next = cur === 'desktop' ? 'mobile' : 'desktop';
+    document.documentElement.setAttribute('data-device', next);
+    localStorage.setItem('device-mode', next);
+    const btn = document.getElementById('deviceToggle');
+    if (btn) btn.classList.toggle('mobile-active', next === 'mobile');
+    document.getElementById('iconDesktop').style.display = next === 'mobile' ? 'none' : 'block';
+    document.getElementById('iconMobile').style.display  = next === 'mobile' ? 'block' : 'none';
+    fecharSidebarMobile();
+  }
+  function toggleSidebarMobile() {
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('sidebarOverlay');
+    const isOpen   = sidebar.classList.toggle('open');
+    overlay.classList.toggle('open', isOpen);
+  }
+  function fecharSidebarMobile() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
+
+  /* ── INIT ── */
+  const sdkScript = document.createElement('script');
+  sdkScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js';
+  document.head.appendChild(sdkScript);
+  sdkScript.onerror = () => {
+    document.getElementById('alertSemBanco').classList.add('show');
+    document.getElementById('dbLabel').textContent = 'SDK indisponível';
+  };
+  sdkScript.onload = async () => {
+    if (SUPABASE_URL && SUPABASE_KEY) {
+      initSupabase();
+      await carregarDados();
+    } else {
+      document.getElementById('alertSemBanco').classList.add('show');
+    }
+  };
+</script>
+</body>
+</html>

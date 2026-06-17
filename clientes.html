@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EstoqueApp — Clientes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0F1117;
+      --surface:   #181C27;
+      --surface2:  #1E2336;
+      --border:    #2A3050;
+      --accent:    #4F6FFF;
+      --accent-h:  #3A56E8;
+      --danger:    #E24B4A;
+      --success:   #3DAA6B;
+      --text:      #E8ECF4;
+      --text-2:    #8A93AF;
+      --text-3:    #505878;
+      --radius:    10px;
+      --radius-lg: 16px;
+      --shadow:    0 4px 24px rgba(0,0,0,.45);
+      --font:      'Inter', system-ui, sans-serif;
+      --transition: .18s ease;
+    }
+    [data-theme="light"] {
+      --bg:        #F4F6FB;
+      --surface:   #FFFFFF;
+      --surface2:  #EEF1F8;
+      --border:    #D3DAE8;
+      --text:      #1A2033;
+      --text-2:    #4A5578;
+      --text-3:    #8A93AF;
+      --shadow:    0 4px 24px rgba(0,0,0,.10);
+      --success:   #2E9057;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; transition: background var(--transition), color var(--transition); }
+    button { font-family: var(--font); cursor: pointer; border: none; }
+    input, select { font-family: var(--font); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    .app { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 220px; flex-shrink: 0;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 1.5rem 1rem;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+      transition: transform var(--transition), background var(--transition), border-color var(--transition);
+    }
+    .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 2rem; padding: 0 .5rem; }
+    .logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 16px; height: 16px; fill: #fff; }
+    .logo-name { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-name span { color: var(--accent); }
+    .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; padding: 0 .5rem; margin-bottom: .5rem; margin-top: 1.25rem; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: .55rem .75rem; border-radius: var(--radius);
+      font-size: 13.5px; font-weight: 500; color: var(--text-2);
+      cursor: pointer; transition: background var(--transition), color var(--transition);
+      margin-bottom: 2px; text-decoration: none;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(79,111,255,.15); color: var(--accent); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: .75rem .5rem 0; border-top: 1px solid var(--border); }
+    .config-notice { background: rgba(79,111,255,.1); border: 1px solid rgba(79,111,255,.3); border-radius: var(--radius); padding: .6rem .75rem; font-size: 11px; color: #8fa8ff; line-height: 1.5; }
+    .config-notice strong { color: var(--accent); display: block; margin-bottom: 2px; }
+
+    /* ── MAIN ── */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+    .topbar {
+      position: sticky; top: 0; z-index: 50;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      padding: .85rem 1.75rem;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .topbar-left  { display: flex; align-items: center; gap: 12px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .page-title      { font-size: 15px; font-weight: 600; }
+    .page-breadcrumb { font-size: 12px; color: var(--text-3); }
+    .hamburger { display: none; background: none; color: var(--text-2); padding: 4px; border-radius: 6px; }
+    .hamburger svg { width: 20px; height: 20px; }
+    .content { padding: 1.75rem; flex: 1; }
+
+    .theme-toggle {
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text-2); width: 34px; height: 34px;
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .theme-toggle:hover { background: var(--border); color: var(--text); }
+    .theme-toggle svg { width: 16px; height: 16px; }
+    #dbStatus { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); }
+
+    /* ── LAYOUT ── */
+    .page-layout { display: grid; grid-template-columns: 400px 1fr; gap: 1.25rem; align-items: start; }
+
+    /* ── FORM CARD ── */
+    .form-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.5rem;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .form-card-title {
+      font-size: 14px; font-weight: 600;
+      margin-bottom: 1.5rem; padding-bottom: .85rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .form-card-title svg { width: 16px; height: 16px; color: var(--accent); }
+
+    /* código sequencial */
+    .codigo-field {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .65rem .9rem;
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+    .codigo-label { font-size: 11px; color: var(--text-3); font-weight: 500; text-transform: uppercase; letter-spacing: .5px; }
+    .codigo-value { font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: 1px; font-variant-numeric: tabular-nums; }
+    .codigo-badge { font-size: 10px; background: rgba(79,111,255,.15); color: #8fa8ff; padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 1rem; }
+    .form-label { font-size: 12px; font-weight: 500; color: var(--text-2); }
+    .form-label span { color: var(--danger); margin-left: 2px; }
+    .form-input, .form-select {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .65rem .9rem;
+      font-size: 13.5px; color: var(--text); outline: none; width: 100%;
+      transition: border-color var(--transition), box-shadow var(--transition), background var(--transition), color var(--transition);
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,111,255,.12); }
+    .form-input::placeholder { color: var(--text-3); }
+    .form-select option { background: var(--surface); color: var(--text); }
+    .form-select:disabled { opacity: .5; cursor: not-allowed; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    /* carregando cidades */
+    .select-loading { position: relative; }
+    .select-loading::after {
+      content: ''; position: absolute; right: 32px; top: 50%; transform: translateY(-50%);
+      width: 12px; height: 12px; border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .6s linear infinite; display: none;
+    }
+    .select-loading.loading::after { display: block; }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    /* botões */
+    .btn-submit {
+      width: 100%; padding: .85rem;
+      background: var(--accent); color: #fff;
+      border-radius: var(--radius); font-size: 14px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      cursor: pointer; border: none;
+      transition: background var(--transition), transform .1s;
+      margin-top: 1.5rem;
+    }
+    .btn-submit:hover { background: var(--accent-h); }
+    .btn-submit:active { transform: scale(.98); }
+    .btn-submit svg { width: 16px; height: 16px; }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: .55rem .9rem; border-radius: var(--radius); font-size: 13px; font-weight: 500; transition: background var(--transition); cursor: pointer; }
+    .btn-ghost { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2); }
+    .btn-ghost:hover { background: var(--border); color: var(--text); }
+
+    /* ── LISTA ── */
+    .lista-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .lista-header {
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+    }
+    .lista-header-title { font-size: 13px; font-weight: 600; }
+    .lista-count { font-size: 11px; color: var(--text-3); background: var(--surface2); padding: 2px 9px; border-radius: 20px; }
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; fill: var(--text-3); pointer-events: none; }
+    .search-input {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .45rem .75rem .45rem 28px;
+      font-size: 12px; color: var(--text); outline: none; width: 170px;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-3); }
+
+    .lista-table-wrap { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: .65rem 1rem; text-align: left;
+      font-size: 10px; font-weight: 600; color: var(--text-3);
+      text-transform: uppercase; letter-spacing: .6px;
+      background: var(--surface2); border-bottom: 1px solid var(--border);
+      white-space: nowrap; position: sticky; top: 0; z-index: 1;
+    }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background var(--transition); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: .7rem 1rem; font-size: 12.5px; color: var(--text); vertical-align: middle; }
+    .td-code  { font-weight: 700; color: var(--accent); font-size: 12px; white-space: nowrap; }
+    .td-name  { font-weight: 500; }
+    .td-muted { color: var(--text-2); font-size: 12px; }
+
+    .btn-icon {
+      background: none; border: none; cursor: pointer; color: var(--text-3);
+      padding: 5px; border-radius: 6px;
+      transition: background var(--transition), color var(--transition);
+      display: inline-flex; align-items: center;
+    }
+    .btn-icon:hover { background: rgba(226,75,74,.15); color: var(--danger); }
+    .btn-icon svg { width: 14px; height: 14px; }
+    .btn-edit {
+      background: none; border: none; cursor: pointer; color: var(--text-3);
+      padding: 5px; border-radius: 6px;
+      transition: background var(--transition), color var(--transition);
+      display: inline-flex; align-items: center;
+    }
+    .btn-edit:hover { background: rgba(79,111,255,.15); color: var(--accent); }
+    .btn-edit svg { width: 14px; height: 14px; }
+
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text-3); }
+    .empty-state svg { width: 36px; height: 36px; margin: 0 auto .75rem; display: block; opacity: .35; }
+    .empty-state p    { font-size: 13px; }
+    .empty-state small { font-size: 11px; display: block; margin-top: 4px; }
+
+    /* ── MODAL ── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity var(--transition);
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.75rem;
+      width: 100%; max-width: 400px;
+      transform: translateY(16px); transition: transform var(--transition);
+      box-shadow: var(--shadow);
+    }
+    .overlay.open .modal { transform: translateY(0); }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .modal-title  { font-size: 14px; font-weight: 600; }
+    .modal-close  { background: var(--surface2); border: none; color: var(--text-2); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .modal-close:hover { background: var(--border); }
+    .modal-close svg { width: 13px; height: 13px; }
+    .confirm-msg  { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 1.25rem; }
+    .confirm-msg strong { color: var(--text); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: .75rem; }
+    .btn-danger-solid { background: var(--danger); color: #fff; border: none; }
+    .btn-danger-solid:hover { background: #c73b3a; }
+
+    /* TOAST */
+    .toast-wrap { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 999; display: flex; flex-direction: column; gap: .5rem; }
+    .toast {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .7rem 1rem;
+      font-size: 13px; color: var(--text);
+      display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow);
+      transform: translateX(120%); transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+      min-width: 200px; max-width: 320px;
+    }
+    .toast.show { transform: translateX(0); }
+    .toast svg { width: 15px; height: 15px; flex-shrink: 0; }
+    .toast-success { border-left: 3px solid var(--success); }
+    .toast-error   { border-left: 3px solid var(--danger); }
+    .toast-info    { border-left: 3px solid var(--accent); }
+
+    @media (max-width: 960px) { .page-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); box-shadow: var(--shadow); }
+      .main { margin-left: 0; }
+      .hamburger { display: flex; }
+      .topbar { padding: .75rem 1rem; }
+      .content { padding: 1rem; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+
+    /* ── MODO MOBILE ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 98; cursor: pointer;
+    }
+    [data-device="mobile"] .sidebar-overlay.open { display: block; }
+    [data-device="mobile"] .sidebar { transform: translateX(-100%); transition: transform .25s; }
+    [data-device="mobile"] .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.5); }
+    [data-device="mobile"] .main { margin-left: 0 !important; }
+    [data-device="mobile"] .hamburger { display: flex !important; }
+    [data-device="mobile"] .form-row { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .page-layout,
+    [data-device="mobile"] .cadastro-layout { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .btn-action { min-height: 38px; padding: .45rem .85rem !important; font-size: 12px; }
+    [data-device="mobile"] .btn-icon,
+    [data-device="mobile"] .btn-edit { min-width: 38px; min-height: 38px; padding: 8px !important; }
+    [data-device="mobile"] .form-input,
+    [data-device="mobile"] .form-select { font-size: 16px !important; padding: .75rem 1rem !important; }
+    [data-device="mobile"] .lista-table-wrap,
+    [data-device="mobile"] .modal-det-body { overflow-x: auto; }
+    [data-device="mobile"] .modal-det-inner { margin: .5rem; max-width: calc(100vw - 1rem) !important; border-radius: 12px; }
+    [data-device="mobile"] .det-client-grid { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .period-tab { padding: 7px 10px !important; min-height: 34px; }
+    [data-device="mobile"] .client-filter-wrap { min-width: 100% !important; }
+    [data-device="mobile"] .filters-bar { flex-direction: column; align-items: flex-start !important; }
+    [data-device="mobile"] .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    [data-device="mobile"] .charts-row,
+    [data-device="mobile"] .charts-row-3 { grid-template-columns: 1fr !important; }
+    .device-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+      cursor: pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center;
+      justify-content: center; transition: background .15s, color .15s; }
+    .device-toggle:hover { background: var(--border); color: var(--text); }
+    .device-toggle svg { width: 16px; height: 16px; display: block; }
+    .device-toggle.mobile-active { background: rgba(79,111,255,.15); color: var(--accent); border-color: rgba(79,111,255,.4); }
+  </style>
+</head>
+<body>
+<div class="app">
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="fecharSidebarMobile()"></div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14L4 17m8 4V11"/></svg>
+      </div>
+      <span class="logo-name">Estoque<span>App</span></span>
+    </div>
+
+    <span class="nav-label">Menu</span>
+    <a class="nav-item" href="produtos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      Produtos
+    </a>
+    <a class="nav-item" href="lancamento.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H5a2 2 0 00-2 2v2h18v-2a2 2 0 00-2-2h-4M12 3v10m0 0l-3-3m3 3l3-3"/></svg>
+      Lançamento
+    </a>
+    <a class="nav-item active" href="clientes.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Clientes
+    </a>
+    <a class="nav-item" href="pedidos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+      Pedidos
+    </a>
+    <a class="nav-item" href="relatorios.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Relatórios
+    </a>
+
+    <span class="nav-label">Config</span>
+    <a class="nav-item" href="produtos.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Configurações
+    </a>
+
+    <div class="sidebar-footer">
+      <a href="Flores_Bruna.html" class="nav-item" style="font-size:12px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Página inicial
+      </a>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" onclick="toggleSidebarMobile()" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div>
+          <div class="page-title">Cadastro de Clientes</div>
+          <div class="page-breadcrumb">EstoqueApp › Clientes</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div id="dbStatus">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--text-3);display:inline-block;" id="dbDot"></span>
+          <span id="dbLabel">Sem banco</span>
+        </div>
+        <button class="device-toggle" id="deviceToggle" onclick="toggleDevice()" title="Alternar modo de visualização">
+          <svg id="iconDesktop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <svg id="iconMobile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        </button>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema">
+          <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg id="iconSun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-layout">
+
+        <!-- ── FORMULÁRIO ── -->
+        <div class="form-card">
+          <div class="form-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            <span id="formTitle">Novo cliente</span>
+          </div>
+
+          <!-- CÓDIGO SEQUENCIAL -->
+          <div class="codigo-field">
+            <div>
+              <div class="codigo-label">Código do cliente</div>
+              <div class="codigo-value" id="codigoDisplay">#—</div>
+            </div>
+            <span class="codigo-badge" id="codigoBadge">Automático</span>
+          </div>
+
+          <form id="cliForm" onsubmit="submeterCliente(event)" autocomplete="off">
+            <input type="hidden" id="f_id" />
+
+            <div class="form-group">
+              <label class="form-label" for="f_nome">Nome do cliente <span>*</span></label>
+              <input class="form-input" id="f_nome" type="text" placeholder="Nome completo" required />
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="f_celular">Celular</label>
+                <input class="form-input" id="f_celular" type="tel"
+                  placeholder="(00) 00000-0000"
+                  oninput="mascararTelefone(this)" maxlength="15" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f_email">E-mail</label>
+                <input class="form-input" id="f_email" type="email" placeholder="exemplo@email.com" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="f_estado">Estado</label>
+                <select class="form-select" id="f_estado" onchange="onEstadoChange()">
+                  <option value="">Selecione...</option>
+                  <option value="AC">AC — Acre</option>
+                  <option value="AL">AL — Alagoas</option>
+                  <option value="AP">AP — Amapá</option>
+                  <option value="AM">AM — Amazonas</option>
+                  <option value="BA">BA — Bahia</option>
+                  <option value="CE">CE — Ceará</option>
+                  <option value="DF">DF — Distrito Federal</option>
+                  <option value="ES">ES — Espírito Santo</option>
+                  <option value="GO">GO — Goiás</option>
+                  <option value="MA">MA — Maranhão</option>
+                  <option value="MT">MT — Mato Grosso</option>
+                  <option value="MS">MS — Mato Grosso do Sul</option>
+                  <option value="MG">MG — Minas Gerais</option>
+                  <option value="PA">PA — Pará</option>
+                  <option value="PB">PB — Paraíba</option>
+                  <option value="PR">PR — Paraná</option>
+                  <option value="PE">PE — Pernambuco</option>
+                  <option value="PI">PI — Piauí</option>
+                  <option value="RJ">RJ — Rio de Janeiro</option>
+                  <option value="RN">RN — Rio Grande do Norte</option>
+                  <option value="RS">RS — Rio Grande do Sul</option>
+                  <option value="RO">RO — Rondônia</option>
+                  <option value="RR">RR — Roraima</option>
+                  <option value="SC">SC — Santa Catarina</option>
+                  <option value="SP">SP — São Paulo</option>
+                  <option value="SE">SE — Sergipe</option>
+                  <option value="TO">TO — Tocantins</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="f_cidade">Cidade</label>
+                <div class="select-loading" id="cidadeWrap">
+                  <select class="form-select" id="f_cidade" disabled>
+                    <option value="">Selecione o estado primeiro</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+              <button type="button" class="btn btn-ghost" id="btnCancelar" style="display:none;flex:1;" onclick="cancelarEdicao()">Cancelar</button>
+              <button type="submit" class="btn-submit" id="btnSalvar" style="margin-top:0;flex:2;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+                Cadastrar cliente
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- ── LISTA DE CLIENTES ── -->
+        <div class="lista-card">
+          <div class="lista-header">
+            <span class="lista-header-title">Clientes cadastrados</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span class="lista-count" id="cliCount">0 clientes</span>
+              <div class="search-wrap">
+                <svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/></svg>
+                <input class="search-input" type="search" placeholder="Buscar..." oninput="filtrar(this.value)" />
+              </div>
+            </div>
+          </div>
+          <div class="lista-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cód.</th>
+                  <th>Nome</th>
+                  <th>Celular</th>
+                  <th>E-mail</th>
+                  <th>Estado</th>
+                  <th>Cidade</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cliTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR EXCLUSÃO -->
+<div class="overlay" id="confirmModal" role="dialog" aria-modal="true">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Remover cliente</h2>
+      <button class="modal-close" onclick="fecharModal()" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="confirm-msg">Tem certeza que deseja remover <strong id="confirmNome"></strong>? Esta ação não pode ser desfeita.</p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-danger-solid" id="btnConfirmarExclusao">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        Remover
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ── TEMA ── */
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('iconMoon').style.display = t === 'dark'  ? 'block' : 'none';
+  document.getElementById('iconSun').style.display  = t === 'light' ? 'block' : 'none';
+}
+function toggleTheme() {
+  const n = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', n); applyTheme(n);
+}
+
+/* ── SUPABASE ── */
+let SUPABASE_URL = localStorage.getItem('sb_url') || '';
+let SUPABASE_KEY = localStorage.getItem('sb_key') || '';
+let sb = null;
+
+function initSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return false;
+  try {
+    let url = SUPABASE_URL.trim();
+    if (!url.startsWith('http')) url = 'https://' + url + '.supabase.co';
+    sb = window.supabase.createClient(url, SUPABASE_KEY.trim(), { auth: { persistSession: false } });
+    updateDbStatus(true); return true;
+  } catch(e) { updateDbStatus(false); return false; }
+}
+
+function updateDbStatus(ok) {
+  document.getElementById('dbDot').style.background = ok ? 'var(--success)' : 'var(--text-3)';
+  const lbl = document.getElementById('dbLabel');
+  lbl.textContent = ok ? 'Conectado' : 'Sem banco';
+  lbl.style.color = ok ? 'var(--success)' : 'var(--text-3)';
+}
+
+/* ── ESTADO ── */
+let clientes   = [];
+let termoBusca = '';
+let editandoId = null;
+
+/* ── CÓDIGO SEQUENCIAL ── */
+async function atualizarProximoCodigo() {
+  if (!sb) { document.getElementById('codigoDisplay').textContent = '#—'; return; }
+  const { data } = await sb.from('SA1').select('id').order('id', { ascending: false }).limit(1);
+  const proximo  = data && data.length ? data[0].id + 1 : 1;
+  document.getElementById('codigoDisplay').textContent = '#' + String(proximo).padStart(5, '0');
+}
+
+/* ── CRUD ── */
+async function carregarClientes() {
+  if (!sb) return;
+  const { data, error } = await sb.from('SA1').select('*').order('nome');
+  if (error) { showToast('Erro ao carregar: ' + error.message, 'error'); return; }
+  clientes = data || [];
+  renderTabela();
+}
+
+async function submeterCliente(e) {
+  e.preventDefault();
+  if (!sb) { showToast('Conecte o Supabase para salvar.', 'error'); return; }
+
+  const btn = document.getElementById('btnSalvar');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  const payload = {
+    nome:    document.getElementById('f_nome').value.trim(),
+    celular: document.getElementById('f_celular').value.trim() || null,
+    email:   document.getElementById('f_email').value.trim()   || null,
+    estado:  document.getElementById('f_estado').value         || null,
+    cidade:  document.getElementById('f_cidade').value         || null,
+  };
+
+  let error;
+  if (editandoId) {
+    ({ error } = await sb.from('SA1').update(payload).eq('id', editandoId));
+  } else {
+    ({ error } = await sb.from('SA1').insert([payload]));
+  }
+
+  btn.disabled = false; restaurarBotao();
+
+  if (error) { showToast('Erro ao salvar: ' + error.message, 'error'); return; }
+
+  showToast(editandoId ? 'Cliente atualizado!' : 'Cliente cadastrado!', 'success');
+  cancelarEdicao();
+  await carregarClientes();
+  await atualizarProximoCodigo();
+}
+
+async function excluirCliente(id) {
+  const { error } = await sb.from('SA1').delete().eq('id', id);
+  if (error) { showToast('Erro ao remover: ' + error.message, 'error'); return; }
+  showToast('Cliente removido.', 'info');
+  clientes = clientes.filter(c => c.id !== id);
+  if (editandoId === id) cancelarEdicao();
+  renderTabela();
+  await atualizarProximoCodigo();
+}
+
+/* ── EDIÇÃO ── */
+async function editarCliente(id) {
+  const c = clientes.find(x => x.id === id);
+  if (!c) return;
+  editandoId = id;
+  document.getElementById('f_id').value      = id;
+  document.getElementById('f_nome').value    = c.nome    || '';
+  document.getElementById('f_celular').value = c.celular || '';
+  document.getElementById('f_email').value   = c.email   || '';
+
+  // preenche estado e aguarda cidades para selecionar a cidade correta
+  if (c.estado) {
+    document.getElementById('f_estado').value = c.estado;
+    await carregarCidades(c.estado, c.cidade || '');
+  }
+
+  document.getElementById('codigoDisplay').textContent = '#' + String(c.id).padStart(5, '0');
+  document.getElementById('codigoBadge').textContent   = 'Editando';
+  document.getElementById('formTitle').textContent     = 'Editar cliente';
+  document.getElementById('btnCancelar').style.display = 'flex';
+  restaurarBotao('Atualizar cliente');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('f_nome').focus();
+}
+
+function cancelarEdicao() {
+  editandoId = null;
+  document.getElementById('cliForm').reset();
+  document.getElementById('f_id').value = '';
+  document.getElementById('formTitle').textContent     = 'Novo cliente';
+  document.getElementById('btnCancelar').style.display = 'none';
+  document.getElementById('codigoBadge').textContent   = 'Automático';
+  resetSelectCidade();
+  atualizarProximoCodigo();
+  restaurarBotao();
+}
+
+function restaurarBotao(label = 'Cadastrar cliente') {
+  document.getElementById('btnSalvar').innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+      <polyline points="17 21 17 13 7 13 7 21"/>
+      <polyline points="7 3 7 8 15 8"/>
+    </svg> ${label}`;
+  document.getElementById('btnSalvar').disabled = false;
+}
+
+/* ── IBGE — CIDADES ── */
+async function onEstadoChange() {
+  const uf = document.getElementById('f_estado').value;
+  resetSelectCidade();
+  if (uf) await carregarCidades(uf);
+}
+
+async function carregarCidades(uf, cidadeSelecionada = '') {
+  const wrap = document.getElementById('cidadeWrap');
+  const sel  = document.getElementById('f_cidade');
+  wrap.classList.add('loading');
+  sel.disabled = true;
+  sel.innerHTML = '<option value="">Carregando...</option>';
+
+  try {
+    const res  = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+    const data = await res.json();
+    sel.innerHTML = '<option value="">Selecione a cidade...</option>' +
+      data.map(c => `<option value="${c.nome}" ${c.nome === cidadeSelecionada ? 'selected' : ''}>${esc(c.nome)}</option>`).join('');
+    sel.disabled = false;
+  } catch(e) {
+    sel.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+    sel.disabled  = false;
+    showToast('Não foi possível carregar as cidades.', 'error');
+  } finally {
+    wrap.classList.remove('loading');
+  }
+}
+
+function resetSelectCidade() {
+  const sel = document.getElementById('f_cidade');
+  sel.innerHTML = '<option value="">Selecione o estado primeiro</option>';
+  sel.disabled  = true;
+}
+
+/* ── MODAL ── */
+function confirmarExclusao(id) {
+  const c = clientes.find(x => x.id === id);
+  document.getElementById('confirmNome').textContent = c ? c.nome : 'este cliente';
+  document.getElementById('confirmModal').classList.add('open');
+  document.getElementById('btnConfirmarExclusao').onclick = async () => {
+    fecharModal(); await excluirCliente(id);
+  };
+}
+function fecharModal() { document.getElementById('confirmModal').classList.remove('open'); }
+document.getElementById('confirmModal').addEventListener('click', e => { if (e.target === e.currentTarget) fecharModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharModal(); });
+
+/* ── RENDER ── */
+function filtrar(v) { termoBusca = v; renderTabela(); }
+
+function renderTabela() {
+  const tbody = document.getElementById('cliTbody');
+  const count = document.getElementById('cliCount');
+  count.textContent = clientes.length + (clientes.length === 1 ? ' cliente' : ' clientes');
+
+  const lista = termoBusca
+    ? clientes.filter(c => {
+        const t = termoBusca.toLowerCase();
+        return (c.nome||'').toLowerCase().includes(t)
+            || (c.email||'').toLowerCase().includes(t)
+            || (c.cidade||'').toLowerCase().includes(t);
+      })
+    : clientes;
+
+  if (!lista.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="7">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <p>${clientes.length === 0 ? 'Nenhum cliente cadastrado.' : 'Nenhum resultado.'}</p>
+          <small>${clientes.length === 0 ? 'Preencha o formulário ao lado.' : 'Tente outro termo.'}</small>
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(c => `
+    <tr>
+      <td class="td-code">#${String(c.id).padStart(5,'0')}</td>
+      <td class="td-name">${esc(c.nome)}</td>
+      <td class="td-muted">${esc(c.celular || '—')}</td>
+      <td>${c.email ? `<a href="mailto:${esc(c.email)}" style="color:var(--accent);font-size:12px;">${esc(c.email)}</a>` : '<span style="color:var(--text-3);font-size:12px">—</span>'}</td>
+      <td class="td-muted">${esc(c.estado || '—')}</td>
+      <td class="td-muted">${esc(c.cidade || '—')}</td>
+      <td>
+        <div style="display:flex;gap:2px;">
+          <button class="btn-edit" onclick="editarCliente(${c.id})" title="Editar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon" onclick="confirmarExclusao(${c.id})" title="Remover">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+/* ── MÁSCARA TELEFONE ── */
+function mascararTelefone(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 10) {
+    v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7,11);
+  } else if (v.length > 6) {
+    v = '(' + v.slice(0,2) + ') ' + v.slice(2,6) + '-' + v.slice(6);
+  } else if (v.length > 2) {
+    v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+  } else if (v.length > 0) {
+    v = '(' + v;
+  }
+  input.value = v;
+}
+
+/* ── TOAST ── */
+function showToast(msg, type = 'info') {
+  const icons = {
+    success: `<svg viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`,
+    error:   `<svg viewBox="0 0 24 24" fill="none" stroke="var(--danger)"  stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    info:    `<svg viewBox="0 0 24 24" fill="none" stroke="var(--accent)"  stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/></svg>`,
+  };
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.innerHTML = `${icons[type]}<span>${msg}</span>`;
+  document.getElementById('toastWrap').appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3400);
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── MODO DISPOSITIVO ── */
+function initDevice() {
+  const d = localStorage.getItem('device-mode') || 'desktop';
+  document.documentElement.setAttribute('data-device', d);
+  const btn = document.getElementById('deviceToggle');
+  if (btn) btn.classList.toggle('mobile-active', d === 'mobile');
+  document.getElementById('iconDesktop').style.display = d === 'mobile' ? 'none' : 'block';
+  document.getElementById('iconMobile').style.display  = d === 'mobile' ? 'block' : 'none';
+}
+function toggleDevice() {
+  const cur  = document.documentElement.getAttribute('data-device') || 'desktop';
+  const next = cur === 'desktop' ? 'mobile' : 'desktop';
+  document.documentElement.setAttribute('data-device', next);
+  localStorage.setItem('device-mode', next);
+  const btn = document.getElementById('deviceToggle');
+  if (btn) btn.classList.toggle('mobile-active', next === 'mobile');
+  document.getElementById('iconDesktop').style.display = next === 'mobile' ? 'none' : 'block';
+  document.getElementById('iconMobile').style.display  = next === 'mobile' ? 'block' : 'none';
+  fecharSidebarMobile();
+}
+function toggleSidebarMobile() {
+  const sidebar  = document.getElementById('sidebar');
+  const overlay  = document.getElementById('sidebarOverlay');
+  const isOpen   = sidebar.classList.toggle('open');
+  overlay.classList.toggle('open', isOpen);
+}
+function fecharSidebarMobile() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+/* ── INIT ── */
+applyTheme(localStorage.getItem('theme') || 'dark');
+initDevice();
+
+const sdkScript = document.createElement('script');
+sdkScript.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js';
+sdkScript.onload = async () => {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    initSupabase();
+    await carregarClientes();
+    await atualizarProximoCodigo();
+  } else {
+    renderTabela();
+  }
+};
+sdkScript.onerror = () => renderTabela();
+document.head.appendChild(sdkScript);
+</script>
+</body>
+</html>

@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flores Bruna</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #0D0D0D;
+      --surface:   #161616;
+      --surface2:  #1F1F1F;
+      --border:    #2C2C2C;
+      --accent:    #C9A96E;
+      --accent-h:  #B8924F;
+      --text:      #F0EBE3;
+      --text-2:    #A09080;
+      --text-3:    #5A5040;
+      --success:   #4CAF7D;
+      --radius:    12px;
+      --radius-lg: 20px;
+      --shadow:    0 8px 40px rgba(0,0,0,.6);
+      --font:      'Inter', system-ui, sans-serif;
+      --font-h:    'Playfair Display', Georgia, serif;
+      --transition: .2s ease;
+    }
+    [data-theme="light"] {
+      --bg:        #FAF7F2;
+      --surface:   #FFFFFF;
+      --surface2:  #F2EDE4;
+      --border:    #E0D8CC;
+      --accent:    #B8924F;
+      --accent-h:  #9A7A3E;
+      --text:      #1A1510;
+      --text-2:    #6B5C48;
+      --text-3:    #A09080;
+      --shadow:    0 8px 40px rgba(0,0,0,.10);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; scroll-behavior: smooth; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; transition: background var(--transition), color var(--transition); }
+    a { color: inherit; text-decoration: none; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+    /* TOPBAR */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 2rem;
+      background: rgba(13,13,13,.85); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      transition: background var(--transition), border-color var(--transition);
+    }
+    [data-theme="light"] .topbar { background: rgba(250,247,242,.88); }
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-icon {
+      width: 36px; height: 36px; background: var(--accent);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    }
+    .brand-icon svg { width: 18px; height: 18px; }
+    .brand-name { font-family: var(--font-h); font-size: 18px; font-weight: 600; letter-spacing: .3px; }
+    .brand-name span { color: var(--accent); }
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .theme-btn {
+      width: 36px; height: 36px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 9px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-2);
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .theme-btn:hover { background: var(--border); color: var(--text); }
+    .theme-btn svg { width: 16px; height: 16px; }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 6rem 2rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,169,110,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-decor {
+      position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+      width: 500px; height: 500px; border-radius: 50%;
+      border: 1px solid rgba(201,169,110,.07);
+      pointer-events: none;
+    }
+    .hero-decor::after {
+      content: ''; position: absolute; inset: 40px; border-radius: 50%;
+      border: 1px solid rgba(201,169,110,.05);
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 640px; }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(201,169,110,.1); border: 1px solid rgba(201,169,110,.25);
+      border-radius: 99px; padding: .35rem .9rem;
+      font-size: 12px; font-weight: 500; color: var(--accent);
+      margin-bottom: 1.75rem; letter-spacing: .3px;
+    }
+    .hero-badge svg { width: 12px; height: 12px; fill: var(--accent); }
+    .hero-title {
+      font-family: var(--font-h);
+      font-size: clamp(2.4rem, 6vw, 3.6rem);
+      font-weight: 700; line-height: 1.15;
+      margin-bottom: 1.25rem;
+      letter-spacing: -.5px;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-sub {
+      font-size: 15px; color: var(--text-2); line-height: 1.7;
+      margin-bottom: 2.5rem; max-width: 440px; margin-left: auto; margin-right: auto;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 9px;
+      background: var(--accent); color: #0D0D0D;
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      padding: .85rem 1.75rem; border-radius: var(--radius);
+      cursor: pointer; border: none;
+      transition: background var(--transition), transform .12s, box-shadow var(--transition);
+      box-shadow: 0 4px 20px rgba(201,169,110,.3);
+    }
+    .btn-primary:hover { background: var(--accent-h); transform: translateY(-2px); box-shadow: 0 8px 28px rgba(201,169,110,.35); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-primary svg { width: 16px; height: 16px; }
+
+    /* CARDS SECTION */
+    .section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--accent);
+      margin-bottom: .75rem;
+    }
+    .section-title {
+      font-family: var(--font-h); font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 600; margin-bottom: 2.5rem; line-height: 1.3;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.25rem;
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.75rem;
+      transition: background var(--transition), border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+      cursor: pointer; position: relative; overflow: hidden;
+    }
+    .card::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit;
+      background: linear-gradient(135deg, rgba(201,169,110,.06) 0%, transparent 60%);
+      opacity: 0; transition: opacity var(--transition);
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: rgba(201,169,110,.3); }
+    .card:hover::before { opacity: 1; }
+    .card-icon {
+      width: 44px; height: 44px; background: rgba(201,169,110,.12);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .card-icon svg { width: 20px; height: 20px; color: var(--accent); }
+    .card-title { font-size: 15px; font-weight: 600; margin-bottom: .5rem; }
+    .card-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 1.25rem; }
+    .card-link {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 12px; font-weight: 600; color: var(--accent);
+      transition: gap var(--transition);
+    }
+    .card:hover .card-link { gap: 8px; }
+    .card-link svg { width: 13px; height: 13px; }
+
+    /* DIVIDER */
+    .divider {
+      border: none; border-top: 1px solid var(--border);
+      max-width: 1100px; margin: 0 auto;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center; padding: 2rem;
+      font-size: 12px; color: var(--text-3);
+      border-top: 1px solid var(--border);
+    }
+    footer span { color: var(--accent); }
+
+    @media (max-width: 600px) {
+      .topbar { padding: .85rem 1.25rem; }
+      .hero { padding: 5rem 1.25rem 3rem; }
+      .section { padding: 3rem 1.25rem; }
+    }
+
+    /* ── MODO MOBILE ── */
+    .sidebar-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 98; cursor: pointer;
+    }
+    [data-device="mobile"] .sidebar-overlay.open { display: block; }
+    [data-device="mobile"] .sidebar { transform: translateX(-100%); transition: transform .25s; }
+    [data-device="mobile"] .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.5); }
+    [data-device="mobile"] .main { margin-left: 0 !important; }
+    [data-device="mobile"] .hamburger { display: flex !important; }
+    [data-device="mobile"] .form-row { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .page-layout,
+    [data-device="mobile"] .cadastro-layout { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .btn-action { min-height: 38px; padding: .45rem .85rem !important; font-size: 12px; }
+    [data-device="mobile"] .btn-icon,
+    [data-device="mobile"] .btn-edit { min-width: 38px; min-height: 38px; padding: 8px !important; }
+    [data-device="mobile"] .form-input,
+    [data-device="mobile"] .form-select { font-size: 16px !important; padding: .75rem 1rem !important; }
+    [data-device="mobile"] .lista-table-wrap,
+    [data-device="mobile"] .modal-det-body { overflow-x: auto; }
+    [data-device="mobile"] .modal-det-inner { margin: .5rem; max-width: calc(100vw - 1rem) !important; border-radius: 12px; }
+    [data-device="mobile"] .det-client-grid { grid-template-columns: 1fr !important; }
+    [data-device="mobile"] .period-tab { padding: 7px 10px !important; min-height: 34px; }
+    [data-device="mobile"] .client-filter-wrap { min-width: 100% !important; }
+    [data-device="mobile"] .filters-bar { flex-direction: column; align-items: flex-start !important; }
+    [data-device="mobile"] .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+    [data-device="mobile"] .charts-row,
+    [data-device="mobile"] .charts-row-3 { grid-template-columns: 1fr !important; }
+    .device-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+      cursor: pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center;
+      justify-content: center; transition: background .15s, color .15s; }
+    .device-toggle:hover { background: var(--border); color: var(--text); }
+    .device-toggle svg { width: 16px; height: 16px; display: block; }
+    .device-toggle.mobile-active { background: rgba(79,111,255,.15); color: var(--accent); border-color: rgba(79,111,255,.4); }
+  </style>
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0D0D0D" stroke-width="2.2">
+          <path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+      </div>
+      <span class="brand-name">Flores <span>Bruna</span></span>
+    </div>
+    <div class="topbar-actions">
+      <button class="device-toggle" id="deviceToggle" onclick="toggleDevice()" title="Alternar modo de visualização">
+        <svg id="iconDesktop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        <svg id="iconMobile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      </button>
+      <button class="theme-btn" onclick="toggleTheme()" title="Alternar tema">
+        <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="iconSun"  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-decor"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <svg viewBox="0 0 24 24"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0 1 12 2a8 8 0 0 1 8 8.2c0 7.3-8 11.8-8 11.8z"/></svg>
+        Flores &amp; Arranjos
+      </div>
+      <h1 class="hero-title">
+        Bem-vinda à<br/><span>Flores Bruna</span>
+      </h1>
+      <p class="hero-sub">
+        Gerencie seu negócio com elegância. Controle seu estoque de produtos, acompanhe suas peças e mantenha tudo organizado em um só lugar.
+      </p>
+      <a href="produtos.html">
+        <button class="btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          Acessar Estoque
+        </button>
+      </a>
+    </div>
+  </section>
+
+  <hr class="divider" />
+
+  <!-- MÓDULOS -->
+  <section class="section">
+    <div class="section-label">Módulos</div>
+    <h2 class="section-title">O que você pode fazer</h2>
+    <div class="cards-grid">
+
+      <div class="card" onclick="location.href='produtos.html'">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14L4 17m8 4V11"/></svg>
+        </div>
+        <div class="card-title">Estoque de Produtos</div>
+        <div class="card-desc">Cadastre, edite e remova produtos. Controle nome, descrição, tamanho e cor com código automático.</div>
+        <span class="card-link">
+          Abrir estoque
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+
+      <div class="card" onclick="location.href='lancamento.html'">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <div class="card-title">Lançamento em Estoque</div>
+        <div class="card-desc">Registre entradas e saídas de produtos com quantidade, preço, data e observações.</div>
+        <span class="card-link">
+          Registrar lançamento
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+
+      <div class="card" onclick="location.href='clientes.html'">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="card-title">Clientes</div>
+        <div class="card-desc">Cadastre e gerencie seus clientes com nome, celular, e-mail, estado e cidade.</div>
+        <span class="card-link">
+          Gerenciar clientes
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+
+      <div class="card" onclick="location.href='pedidos.html'">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+        </div>
+        <div class="card-title">Pedidos de Venda</div>
+        <div class="card-desc">Crie pedidos para clientes, adicione produtos do estoque e dê baixa automática ao salvar.</div>
+        <span class="card-link">
+          Novo pedido
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+
+      <div class="card" onclick="location.href='relatorios.html'">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+        </div>
+        <div class="card-title">Relatórios</div>
+        <div class="card-desc">Visualize análises por cor, tamanho e movimentação do seu estoque.</div>
+        <span class="card-link">
+          Ver relatórios
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </span>
+      </div>
+
+      <div class="card" style="cursor:default;opacity:.6;">
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+        </div>
+        <div class="card-title">Histórico</div>
+        <div class="card-desc">Acompanhe entradas e saídas de produtos ao longo do tempo.</div>
+        <span class="card-link" style="color:var(--text-3);">Em breve</span>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>
+    &copy; 2025 <span>Flores Bruna</span> — Todos os direitos reservados.
+  </footer>
+
+  <script>
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.getElementById('iconMoon').style.display = theme === 'dark'  ? 'block' : 'none';
+      document.getElementById('iconSun').style.display  = theme === 'light' ? 'block' : 'none';
+    }
+    function toggleTheme() {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      applyTheme(next);
+    }
+    applyTheme(localStorage.getItem('theme') || 'dark');
+    initDevice();
+
+    /* ── MODO DISPOSITIVO ── */
+    function initDevice() {
+      const d = localStorage.getItem('device-mode') || 'desktop';
+      document.documentElement.setAttribute('data-device', d);
+      const btn = document.getElementById('deviceToggle');
+      if (btn) btn.classList.toggle('mobile-active', d === 'mobile');
+      document.getElementById('iconDesktop').style.display = d === 'mobile' ? 'none' : 'block';
+      document.getElementById('iconMobile').style.display  = d === 'mobile' ? 'block' : 'none';
+    }
+    function toggleDevice() {
+      const cur  = document.documentElement.getAttribute('data-device') || 'desktop';
+      const next = cur === 'desktop' ? 'mobile' : 'desktop';
+      document.documentElement.setAttribute('data-device', next);
+      localStorage.setItem('device-mode', next);
+      const btn = document.getElementById('deviceToggle');
+      if (btn) btn.classList.toggle('mobile-active', next === 'mobile');
+      document.getElementById('iconDesktop').style.display = next === 'mobile' ? 'none' : 'block';
+      document.getElementById('iconMobile').style.display  = next === 'mobile' ? 'block' : 'none';
+      fecharSidebarMobile();
+    }
+    function toggleSidebarMobile() {
+      const sidebar  = document.getElementById('sidebar');
+      const overlay  = document.getElementById('sidebarOverlay');
+      if (!sidebar || !overlay) return;
+      const isOpen   = sidebar.classList.toggle('open');
+      overlay.classList.toggle('open', isOpen);
+    }
+    function fecharSidebarMobile() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      if (sidebar) sidebar.classList.remove('open');
+      if (overlay) overlay.classList.remove('open');
+    }
+  </script>
+</body>
+</html>
