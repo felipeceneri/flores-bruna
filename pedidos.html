@@ -1457,6 +1457,28 @@ async function marcarEntregue(id) {
   if (p) p.entregue = true;
   renderPedidos();
   showToast('Pedido marcado como entregue!', 'success');
+  if (p && p.cliente_celular) notificarEntregaWhatsApp(p);
+}
+
+function notificarEntregaWhatsApp(p) {
+  const codigo = '#' + String(p.id).padStart(5, '0');
+  const msg =
+    '🌸 *Flores Bruna* — Confirmação de Entrega\n\n' +
+    'Olá, *' + p.cliente_nome + '*! 😊\n\n' +
+    'Seu pedido *' + codigo + '* foi entregue com sucesso! 🎉\n\n' +
+    'Espero que tenha gostado! Conta pra gente o que achou — ' +
+    'seu feedback é muito importante para nós. 🌷\n\n' +
+    'Obrigada pela preferência! ✨';
+
+  let num = p.cliente_celular.replace(/\D/g, '');
+  if (!num.startsWith('55')) num = '55' + num;
+
+  _wppLink = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+
+  document.getElementById('wppSub').textContent =
+    'Pedido ' + codigo + ' entregue! Enviar confirmação para ' + p.cliente_nome + '?';
+  document.getElementById('wppPreview').textContent = msg;
+  document.getElementById('wppOverlay').classList.add('open');
 }
 
 /* ── CARREGAR PEDIDOS ── */
