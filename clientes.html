@@ -433,61 +433,11 @@
               <input class="form-input" id="f_nome" type="text" placeholder="Nome completo" required />
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="f_celular">Celular</label>
-                <input class="form-input" id="f_celular" type="tel"
-                  placeholder="(00) 00000-0000"
-                  oninput="mascararTelefone(this)" maxlength="15" />
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="f_email">E-mail</label>
-                <input class="form-input" id="f_email" type="email" placeholder="exemplo@email.com" />
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label class="form-label" for="f_estado">Estado</label>
-                <select class="form-select" id="f_estado" onchange="onEstadoChange()">
-                  <option value="">Selecione...</option>
-                  <option value="AC">AC — Acre</option>
-                  <option value="AL">AL — Alagoas</option>
-                  <option value="AP">AP — Amapá</option>
-                  <option value="AM">AM — Amazonas</option>
-                  <option value="BA">BA — Bahia</option>
-                  <option value="CE">CE — Ceará</option>
-                  <option value="DF">DF — Distrito Federal</option>
-                  <option value="ES">ES — Espírito Santo</option>
-                  <option value="GO">GO — Goiás</option>
-                  <option value="MA">MA — Maranhão</option>
-                  <option value="MT">MT — Mato Grosso</option>
-                  <option value="MS">MS — Mato Grosso do Sul</option>
-                  <option value="MG">MG — Minas Gerais</option>
-                  <option value="PA">PA — Pará</option>
-                  <option value="PB">PB — Paraíba</option>
-                  <option value="PR">PR — Paraná</option>
-                  <option value="PE">PE — Pernambuco</option>
-                  <option value="PI">PI — Piauí</option>
-                  <option value="RJ">RJ — Rio de Janeiro</option>
-                  <option value="RN">RN — Rio Grande do Norte</option>
-                  <option value="RS">RS — Rio Grande do Sul</option>
-                  <option value="RO">RO — Rondônia</option>
-                  <option value="RR">RR — Roraima</option>
-                  <option value="SC">SC — Santa Catarina</option>
-                  <option value="SP">SP — São Paulo</option>
-                  <option value="SE">SE — Sergipe</option>
-                  <option value="TO">TO — Tocantins</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label class="form-label" for="f_cidade">Cidade</label>
-                <div class="select-loading" id="cidadeWrap">
-                  <select class="form-select" id="f_cidade" disabled>
-                    <option value="">Selecione o estado primeiro</option>
-                  </select>
-                </div>
-              </div>
+            <div class="form-group">
+              <label class="form-label" for="f_celular">Celular</label>
+              <input class="form-input" id="f_celular" type="tel"
+                placeholder="(00) 00000-0000"
+                oninput="mascararTelefone(this)" maxlength="15" />
             </div>
 
             <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
@@ -523,9 +473,6 @@
                   <th>Cód.</th>
                   <th>Nome</th>
                   <th>Celular</th>
-                  <th>E-mail</th>
-                  <th>Estado</th>
-                  <th>Cidade</th>
                   <th></th>
                 </tr>
               </thead>
@@ -627,9 +574,6 @@ async function submeterCliente(e) {
   const payload = {
     nome:    document.getElementById('f_nome').value.trim(),
     celular: document.getElementById('f_celular').value.trim() || null,
-    email:   document.getElementById('f_email').value.trim()   || null,
-    estado:  document.getElementById('f_estado').value         || null,
-    cidade:  document.getElementById('f_cidade').value         || null,
   };
 
   let error;
@@ -667,13 +611,6 @@ async function editarCliente(id) {
   document.getElementById('f_id').value      = id;
   document.getElementById('f_nome').value    = c.nome    || '';
   document.getElementById('f_celular').value = c.celular || '';
-  document.getElementById('f_email').value   = c.email   || '';
-
-  // preenche estado e aguarda cidades para selecionar a cidade correta
-  if (c.estado) {
-    document.getElementById('f_estado').value = c.estado;
-    await carregarCidades(c.estado, c.cidade || '');
-  }
 
   document.getElementById('codigoDisplay').textContent = '#' + String(c.id).padStart(5, '0');
   document.getElementById('codigoBadge').textContent   = 'Editando';
@@ -691,7 +628,6 @@ function cancelarEdicao() {
   document.getElementById('formTitle').textContent     = 'Novo cliente';
   document.getElementById('btnCancelar').style.display = 'none';
   document.getElementById('codigoBadge').textContent   = 'Automático';
-  resetSelectCidade();
   atualizarProximoCodigo();
   restaurarBotao();
 }
@@ -706,40 +642,6 @@ function restaurarBotao(label = 'Cadastrar cliente') {
   document.getElementById('btnSalvar').disabled = false;
 }
 
-/* ── IBGE — CIDADES ── */
-async function onEstadoChange() {
-  const uf = document.getElementById('f_estado').value;
-  resetSelectCidade();
-  if (uf) await carregarCidades(uf);
-}
-
-async function carregarCidades(uf, cidadeSelecionada = '') {
-  const wrap = document.getElementById('cidadeWrap');
-  const sel  = document.getElementById('f_cidade');
-  wrap.classList.add('loading');
-  sel.disabled = true;
-  sel.innerHTML = '<option value="">Carregando...</option>';
-
-  try {
-    const res  = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
-    const data = await res.json();
-    sel.innerHTML = '<option value="">Selecione a cidade...</option>' +
-      data.map(c => `<option value="${c.nome}" ${c.nome === cidadeSelecionada ? 'selected' : ''}>${esc(c.nome)}</option>`).join('');
-    sel.disabled = false;
-  } catch(e) {
-    sel.innerHTML = '<option value="">Erro ao carregar cidades</option>';
-    sel.disabled  = false;
-    showToast('Não foi possível carregar as cidades.', 'error');
-  } finally {
-    wrap.classList.remove('loading');
-  }
-}
-
-function resetSelectCidade() {
-  const sel = document.getElementById('f_cidade');
-  sel.innerHTML = '<option value="">Selecione o estado primeiro</option>';
-  sel.disabled  = true;
-}
 
 /* ── MODAL ── */
 function confirmarExclusao(id) {
@@ -766,14 +668,13 @@ function renderTabela() {
     ? clientes.filter(c => {
         const t = termoBusca.toLowerCase();
         return (c.nome||'').toLowerCase().includes(t)
-            || (c.email||'').toLowerCase().includes(t)
-            || (c.cidade||'').toLowerCase().includes(t);
+            || (c.celular||'').toLowerCase().includes(t);
       })
     : clientes;
 
   if (!lista.length) {
     tbody.innerHTML = `
-      <tr><td colspan="7">
+      <tr><td colspan="4">
         <div class="empty-state">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
           <p>${clientes.length === 0 ? 'Nenhum cliente cadastrado.' : 'Nenhum resultado.'}</p>
@@ -788,9 +689,6 @@ function renderTabela() {
       <td class="td-code">#${String(c.id).padStart(5,'0')}</td>
       <td class="td-name">${esc(c.nome)}</td>
       <td class="td-muted">${esc(c.celular || '—')}</td>
-      <td>${c.email ? `<a href="mailto:${esc(c.email)}" style="color:var(--accent);font-size:12px;">${esc(c.email)}</a>` : '<span style="color:var(--text-3);font-size:12px">—</span>'}</td>
-      <td class="td-muted">${esc(c.estado || '—')}</td>
-      <td class="td-muted">${esc(c.cidade || '—')}</td>
       <td>
         <div style="display:flex;gap:2px;">
           <button class="btn-edit" onclick="editarCliente(${c.id})" title="Editar">

@@ -731,18 +731,6 @@
                   <label>Celular</label>
                   <span id="cp_celular" class="muted">—</span>
                 </div>
-                <div class="cliente-field">
-                  <label>E-mail</label>
-                  <span id="cp_email" class="muted">—</span>
-                </div>
-                <div class="cliente-field">
-                  <label>Estado</label>
-                  <span id="cp_estado" class="muted">—</span>
-                </div>
-                <div class="cliente-field">
-                  <label>Cidade</label>
-                  <span id="cp_cidade" class="muted">—</span>
-                </div>
               </div>
             </div>
 
@@ -887,18 +875,6 @@
             <label>Celular</label>
             <span id="det_celular" class="muted"></span>
           </div>
-          <div class="det-field">
-            <label>E-mail</label>
-            <span id="det_email" class="muted"></span>
-          </div>
-          <div class="det-field">
-            <label>Estado</label>
-            <span id="det_estado" class="muted"></span>
-          </div>
-          <div class="det-field">
-            <label>Cidade</label>
-            <span id="det_cidade" class="muted"></span>
-          </div>
         </div>
       </div>
 
@@ -1023,7 +999,7 @@ async function atualizarProximoCodigo() {
 /* ── CARREGAR DADOS ── */
 async function carregarClientes() {
   if (!sb) return;
-  const { data } = await sb.from('SA1').select('id,nome,celular,email,estado,cidade').order('nome');
+  const { data } = await sb.from('SA1').select('id,nome,celular').order('nome');
   todosClientes = data || [];
 }
 
@@ -1070,14 +1046,11 @@ function abrirDropdownCliente(filtro) {
 
   hlCli = -1;
   dd.innerHTML = lista.map(c => {
-    const sub = [c.cidade, c.estado].filter(Boolean).join(', ');
     return `
       <div class="autocomplete-item" data-id="${c.id}"
            data-nome="${esc(c.nome)}" data-celular="${esc(c.celular||'')}"
-           data-email="${esc(c.email||'')}" data-estado="${esc(c.estado||'')}" data-cidade="${esc(c.cidade||'')}"
            onclick="selecionarCliente(this)">
         <div><span class="item-code">#${String(c.id).padStart(5,'0')}</span>${esc(c.nome)}</div>
-        ${sub ? `<div class="item-sub">${esc(sub)}</div>` : ''}
       </div>`;
   }).join('');
   dd.classList.add('open');
@@ -1100,16 +1073,10 @@ function selecionarCliente(el) {
     id:      Number(el.dataset.id),
     nome:    el.dataset.nome,
     celular: el.dataset.celular,
-    email:   el.dataset.email,
-    estado:  el.dataset.estado,
-    cidade:  el.dataset.cidade,
   };
   document.getElementById('f_busca_cli').value    = clienteSelecionado.nome;
   document.getElementById('cp_nome').textContent    = clienteSelecionado.nome    || '—';
   document.getElementById('cp_celular').textContent = clienteSelecionado.celular || '—';
-  document.getElementById('cp_email').textContent   = clienteSelecionado.email   || '—';
-  document.getElementById('cp_estado').textContent  = clienteSelecionado.estado  || '—';
-  document.getElementById('cp_cidade').textContent  = clienteSelecionado.cidade  || '—';
   document.getElementById('clientePanel').classList.add('show');
   fecharDropdownCliente();
 }
@@ -1398,9 +1365,6 @@ async function salvarPedido() {
     cliente_id:      clienteSelecionado.id,
     cliente_nome:    clienteSelecionado.nome,
     cliente_celular: clienteSelecionado.celular || null,
-    cliente_email:   clienteSelecionado.email   || null,
-    cliente_estado:  clienteSelecionado.estado  || null,
-    cliente_cidade:  clienteSelecionado.cidade  || null,
     observacao:      obs,
     data_pedido:     hoje,
   }]).select('id').single();
@@ -1500,7 +1464,7 @@ async function carregarPedidos() {
   if (!sb) return;
   const { data, error } = await sb
     .from('SC5')
-    .select('id, cliente_nome, cliente_celular, cliente_email, cliente_estado, cliente_cidade, data_pedido, observacao, entregue, SC6(produto_nome, produto_codigo, tamanho, cor, quantidade, valor_unitario, valor_total)')
+    .select('id, cliente_nome, cliente_celular, data_pedido, observacao, entregue, SC6(produto_nome, produto_codigo, tamanho, cor, quantidade, valor_unitario, valor_total)')
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) { showToast('Erro ao carregar pedidos: ' + error.message, 'error'); return; }
@@ -1579,9 +1543,6 @@ function abrirDetalhes(id) {
 
   document.getElementById('det_nome').textContent    = p.cliente_nome    || '—';
   document.getElementById('det_celular').textContent = p.cliente_celular || '—';
-  document.getElementById('det_email').textContent   = p.cliente_email   || '—';
-  document.getElementById('det_estado').textContent  = p.cliente_estado  || '—';
-  document.getElementById('det_cidade').textContent  = p.cliente_cidade  || '—';
 
   const itens = p.SC6 || [];
   let totalGeral = 0;
@@ -1680,9 +1641,6 @@ function imprimirPedido() {
       <div class="print-client-grid">
         <div class="print-field" style="grid-column:1/-1"><label>Nome</label><span>${esc(p.cliente_nome)}</span></div>
         <div class="print-field"><label>Celular</label><span>${esc(p.cliente_celular || '—')}</span></div>
-        <div class="print-field"><label>E-mail</label><span>${esc(p.cliente_email || '—')}</span></div>
-        <div class="print-field"><label>Estado</label><span>${esc(p.cliente_estado || '—')}</span></div>
-        <div class="print-field"><label>Cidade</label><span>${esc(p.cliente_cidade || '—')}</span></div>
       </div>
     </div>
 

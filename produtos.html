@@ -536,12 +536,12 @@ async function salvarProduto(prod) {
   if (supabase) {
     if (prod.id && !String(prod.id).startsWith('loc_')) {
       const { error } = await supabase.from('produtos')
-        .update({ nome: prod.nome, descricao: prod.descricao, tamanho: prod.tamanho, cor: prod.cor, codigo: prod.codigo })
+        .update({ nome: prod.nome, tamanho: prod.tamanho, cor: prod.cor, codigo: prod.codigo })
         .eq('id', prod.id);
       if (error) { showToast('Erro ao salvar: ' + error.message, 'error'); return false; }
     } else {
       const { data, error } = await supabase.from('produtos')
-        .insert([{ codigo: prod.codigo, nome: prod.nome, descricao: prod.descricao, tamanho: prod.tamanho, cor: prod.cor }])
+        .insert([{ codigo: prod.codigo, nome: prod.nome, tamanho: prod.tamanho, cor: prod.cor }])
         .select();
       if (error) { showToast('Erro ao inserir: ' + error.message, 'error'); return false; }
       prod.id = data[0].id;
@@ -611,10 +611,6 @@ function renderPage() {
             <input class="form-input" id="f_nome" type="text" placeholder="Ex: Camiseta Polo Masculina"
               value="${esc(prod?.nome || '')}" required autocomplete="off" />
           </div>
-          <div class="form-group">
-            <label class="form-label" for="f_descricao">Descrição do produto</label>
-            <textarea class="form-textarea" id="f_descricao" placeholder="Descreva o produto..." rows="3">${esc(prod?.descricao || '')}</textarea>
-          </div>
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="f_tamanho">Tamanho</label>
@@ -656,7 +652,7 @@ function renderPage() {
         </div>
         <div class="lista-table-wrap">
           <table>
-            <thead><tr><th>Cód.</th><th>Nome</th><th>Descrição</th><th>Tam.</th><th>Cor</th><th></th></tr></thead>
+            <thead><tr><th>Cód.</th><th>Nome</th><th>Tam.</th><th>Cor</th><th></th></tr></thead>
             <tbody>
               ${filtered.length === 0 ? `
                 <tr><td colspan="6">
@@ -670,7 +666,6 @@ function renderPage() {
                   <tr>
                     <td class="td-code">#${String(p.codigo).padStart(5,'0')}</td>
                     <td class="td-name">${esc(p.nome)}</td>
-                    <td><div class="td-desc" title="${esc(p.descricao||'')}">${esc(p.descricao||'—')}</div></td>
                     <td style="color:var(--text-2);font-size:12px;">${esc(p.tamanho||'—')}</td>
                     <td>${p.cor?`<span class="color-text">${esc(p.cor)}</span>`:'<span style="color:var(--text-3)">—</span>'}</td>
                     <td>
@@ -698,10 +693,9 @@ async function submitForm(e) {
   btn.disabled = true;
   btn.innerHTML = 'Salvando...';
   const prod = {
-    nome:      document.getElementById('f_nome').value.trim(),
-    descricao: document.getElementById('f_descricao').value.trim(),
-    tamanho:   document.getElementById('f_tamanho').value,
-    cor:       document.getElementById('f_cor').value.trim(),
+    nome:    document.getElementById('f_nome').value.trim(),
+    tamanho: document.getElementById('f_tamanho').value,
+    cor:     document.getElementById('f_cor').value.trim(),
   };
   if (editingId !== null) {
     const idx = produtos.findIndex(p => p.id == editingId);
