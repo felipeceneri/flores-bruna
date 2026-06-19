@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EstoqueApp — Manual Técnico</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="auth.js"></script>
+  <script>checkAuth('usuarios');</script>
+  <style>
+    :root {
+      --bg: #0F1117; --surface: #181C27; --surface2: #1E2336;
+      --border: #2A3050; --accent: #4F6FFF; --accent-h: #3A56E8;
+      --danger: #E24B4A; --success: #3DAA6B; --warn: #EF9F27;
+      --text: #E8ECF4; --text-2: #8A93AF; --text-3: #505878;
+      --radius: 10px; --radius-lg: 16px; --shadow: 0 4px 24px rgba(0,0,0,.45);
+      --font: 'Inter', system-ui, sans-serif; --mono: 'JetBrains Mono', monospace; --transition: .18s ease;
+    }
+    [data-theme="light"] {
+      --bg: #F4F6FB; --surface: #FFFFFF; --surface2: #EEF1F8;
+      --border: #D3DAE8; --text: #1A2033; --text-2: #4A5578; --text-3: #8A93AF;
+      --shadow: 0 4px 24px rgba(0,0,0,.10); --success: #2E9057;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; transition: background var(--transition), color var(--transition); }
+    button { font-family: var(--font); cursor: pointer; border: none; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .app { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 1.5rem 1rem;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100; }
+    .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 2rem; padding: 0 .5rem; }
+    .logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 16px; height: 16px; fill: #fff; }
+    .logo-name { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-name span { color: var(--accent); }
+    .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; padding: 0 .5rem; margin-bottom: .5rem; margin-top: 1.25rem; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: .55rem .75rem; border-radius: var(--radius);
+      font-size: 13.5px; font-weight: 500; color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition); margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(79,111,255,.15); color: var(--accent); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: .75rem .5rem 0; border-top: 1px solid var(--border); }
+    @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main { margin-left: 0 !important; } .hamburger { display: flex !important; } }
+
+    /* MAIN */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+    .topbar { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--border);
+      padding: .85rem 1.75rem; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .page-title { font-size: 15px; font-weight: 600; }
+    .page-breadcrumb { font-size: 12px; color: var(--text-3); }
+    .theme-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+      cursor: pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center; }
+    .theme-toggle svg { width: 16px; height: 16px; display: block; }
+    .hamburger { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px; color: var(--text-2); align-items: center; }
+    .hamburger svg { width: 16px; height: 16px; display: block; }
+
+    /* CONTENT */
+    .content { flex: 1; padding: 2rem 2.5rem; max-width: 900px; }
+
+    /* TOC */
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; }
+    .toc-title { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: .6px; margin-bottom: .75rem; }
+    .toc ol { padding-left: 1.25rem; display: flex; flex-direction: column; gap: .3rem; }
+    .toc li { font-size: 13.5px; }
+    .toc a { color: var(--accent); }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 3rem; }
+    .section-title { font-size: 20px; font-weight: 700; margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .section-title svg { width: 22px; height: 22px; color: var(--accent); flex-shrink: 0; }
+    h3 { font-size: 15px; font-weight: 600; margin: 1.5rem 0 .6rem; color: var(--text); }
+    h4 { font-size: 13px; font-weight: 600; margin: 1rem 0 .4rem; color: var(--text-2); text-transform: uppercase; letter-spacing: .5px; }
+    p { font-size: 14px; color: var(--text-2); line-height: 1.75; margin-bottom: .75rem; }
+    p strong { color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: .75rem; }
+    li { font-size: 14px; color: var(--text-2); line-height: 1.75; margin-bottom: .2rem; }
+    li strong { color: var(--text); }
+
+    code { font-family: var(--mono); font-size: 12.5px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: #a8d0ff; }
+
+    pre { font-family: var(--mono); font-size: 12.5px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem;
+      overflow-x: auto; line-height: 1.65; margin: .75rem 0; color: #a8d0ff; }
+    pre .comment { color: var(--text-3); }
+    pre .key { color: #c792ea; }
+    pre .val { color: #a8d0ff; }
+    pre .str { color: #c3e88d; }
+
+    .tip { background: rgba(79,111,255,.08); border: 1px solid rgba(79,111,255,.2); border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0; padding: .75rem 1rem; margin: 1rem 0; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+    .tip strong { color: var(--accent); }
+    .warn-tip { background: rgba(239,159,39,.08); border: 1px solid rgba(239,159,39,.2); border-left: 3px solid var(--warn);
+      border-radius: 0 var(--radius) var(--radius) 0; padding: .75rem 1rem; margin: 1rem 0; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+    .warn-tip strong { color: var(--warn); }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; margin: 1rem 0; border-radius: var(--radius); border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .6px;
+      padding: .65rem 1rem; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); }
+    td { padding: .65rem 1rem; font-size: 13px; color: var(--text-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    td code { font-size: 11.5px; }
+    td strong { color: var(--text); }
+
+    .badge { display: inline-flex; align-items: center; border-radius: 99px; padding: 2px 9px;
+      font-size: 11px; font-weight: 600; }
+    .badge-admin { background: rgba(239,159,39,.12); border: 1px solid rgba(239,159,39,.25); color: var(--warn); }
+    .badge-all   { background: rgba(79,111,255,.12); border: 1px solid rgba(79,111,255,.2); color: #8fa8ff; }
+
+    .file-tree { font-family: var(--mono); font-size: 13px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.25rem;
+      line-height: 2; color: var(--text-2); }
+    .file-tree .dir { color: var(--text); font-weight: 600; }
+    .file-tree .new { color: var(--success); }
+    .file-tree .comment { color: var(--text-3); font-size: 11.5px; }
+
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; }
+    .sidebar-overlay.show { display: block; }
+  </style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14L4 17m8 4V11"/></svg></div>
+    <span class="logo-name">Estoque<span>App</span></span>
+  </div>
+  <span class="nav-label">Menu</span>
+  <a class="nav-item" href="produtos.html" data-perm="produtos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Produtos
+  </a>
+  <a class="nav-item" href="clientes.html" data-perm="clientes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Clientes
+  </a>
+  <a class="nav-item" href="lancamento.html" data-perm="lancamento">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H5a2 2 0 00-2 2v2h18v-2a2 2 0 00-2-2h-4M12 3v10m0 0l-3-3m3 3l3-3"/></svg> Lançamento
+  </a>
+  <a class="nav-item" href="pedidos.html" data-perm="pedidos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> Pedidos
+  </a>
+  <a class="nav-item" href="relatorios.html" data-perm="relatorios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Relatórios
+  </a>
+  <a class="nav-item" href="usuarios.html" data-perm="usuarios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="11" x2="19" y2="17"/><line x1="22" y1="14" x2="16" y2="14"/></svg> Usuários
+  </a>
+  <span class="nav-label">Config</span>
+  <a class="nav-item" href="produtos.html" data-perm="usuarios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> Configurações
+  </a>
+  <a class="nav-item" href="manual-usuario.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Manual do Usuário
+  </a>
+  <a class="nav-item active" href="manual-tecnico.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Manual Técnico
+  </a>
+  <div class="sidebar-footer"></div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div>
+        <div class="page-title">Manual Técnico</div>
+        <div class="page-breadcrumb">EstoqueApp › Manual Técnico</div>
+      </div>
+    </div>
+    <div>
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <div class="toc">
+      <div class="toc-title">Índice</div>
+      <ol>
+        <li><a href="#arquitetura">Arquitetura geral</a></li>
+        <li><a href="#arquivos">Estrutura de arquivos</a></li>
+        <li><a href="#banco">Banco de dados (Supabase)</a></li>
+        <li><a href="#autenticacao">Sistema de autenticação</a></li>
+        <li><a href="#permissoes">Sistema de permissões</a></li>
+        <li><a href="#deploy">Deploy e hospedagem</a></li>
+        <li><a href="#nova-pagina">Como adicionar uma nova página</a></li>
+        <li><a href="#backup">Backup e manutenção</a></li>
+        <li><a href="#senha">Redefinir senha de emergência</a></li>
+      </ol>
+    </div>
+
+    <!-- 1. ARQUITETURA -->
+    <div class="section" id="arquitetura">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        1. Arquitetura geral
+      </div>
+      <p>O EstoqueApp é uma aplicação <strong>100% client-side</strong> — sem servidor de aplicação próprio. Todo o processamento acontece no navegador do usuário, e os dados são persistidos no Supabase (PostgreSQL gerenciado).</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Camada</th><th>Tecnologia</th><th>Responsabilidade</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Frontend</strong></td><td>HTML5 + CSS3 + JavaScript (ES6+)</td><td>Interface, lógica de negócio, autenticação</td></tr>
+            <tr><td><strong>Banco de dados</strong></td><td>Supabase (PostgreSQL)</td><td>Persistência de dados via REST API</td></tr>
+            <tr><td><strong>Hospedagem</strong></td><td>GitHub Pages</td><td>Servir os arquivos estáticos</td></tr>
+            <tr><td><strong>Autenticação</strong></td><td>SHA-256 + sessionStorage</td><td>Hash de senha + sessão por aba</td></tr>
+            <tr><td><strong>Fontes</strong></td><td>Google Fonts (Inter, JetBrains Mono)</td><td>Tipografia</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 2. ARQUIVOS -->
+    <div class="section" id="arquivos">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+        2. Estrutura de arquivos
+      </div>
+      <div class="file-tree">
+        <span class="dir">flores-bruna/</span><br>
+        ├── <span class="new">auth.js</span>              <span class="comment"># Módulo de autenticação compartilhado</span><br>
+        ├── <span class="new">login.html</span>            <span class="comment"># Página inicial — login</span><br>
+        ├── index.html            <span class="comment"># Redireciona para login.html</span><br>
+        ├── produtos.html         <span class="comment"># CRUD de produtos</span><br>
+        ├── clientes.html         <span class="comment"># CRUD de clientes</span><br>
+        ├── lancamento.html       <span class="comment"># Entrada de estoque</span><br>
+        ├── pedidos.html          <span class="comment"># Gestão de pedidos</span><br>
+        ├── relatorios.html       <span class="comment"># Dashboard e relatórios</span><br>
+        ├── <span class="new">usuarios.html</span>         <span class="comment"># CRUD de usuários (admin)</span><br>
+        ├── <span class="new">manual-usuario.html</span>   <span class="comment"># Manual do usuário</span><br>
+        ├── <span class="new">manual-tecnico.html</span>   <span class="comment"># Este arquivo</span><br>
+        └── <span class="new">setup_usuarios.sql</span>    <span class="comment"># SQL para criar tabela no Supabase</span>
+      </div>
+      <p style="margin-top:.75rem;">Arquivos marcados em <span style="color:var(--success);font-weight:600;">verde</span> foram adicionados na implementação do sistema de autenticação.</p>
+    </div>
+
+    <!-- 3. BANCO -->
+    <div class="section" id="banco">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        3. Banco de dados (Supabase)
+      </div>
+      <p>Projeto Supabase: <code>zpoqwuuomkomgxphmkcn</code></p>
+
+      <h3>Tabelas existentes</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Tabela</th><th>Descrição</th><th>Colunas principais</th></tr></thead>
+          <tbody>
+            <tr><td><code>produtos</code></td><td>Catálogo de produtos</td><td>id, codigo, nome</td></tr>
+            <tr><td><code>SA1</code></td><td>Clientes</td><td>id, nome, celular, email, endereco</td></tr>
+            <tr><td><code>SB2</code></td><td>Movimentações de estoque</td><td>id, produto_id, produto_nome, produto_codigo, tamanho, cor, quantidade, tipo_entrada, data</td></tr>
+            <tr><td><code>SC5</code></td><td>Cabeçalho dos pedidos</td><td>id, cliente_nome, cliente_celular, data_pedido, observacao, entregue</td></tr>
+            <tr><td><code>SC6</code></td><td>Itens dos pedidos</td><td>produto_nome, produto_codigo, tamanho, cor, quantidade, valor_unitario, valor_total</td></tr>
+            <tr><td><code><strong>usuarios</strong></code></td><td>Usuários do sistema</td><td>id, nome, senha_hash, ativo, permissoes (jsonb), created_at</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Tabela <code>usuarios</code> — estrutura detalhada</h3>
+      <pre><span class="comment">-- Criação da tabela</span>
+<span class="key">CREATE TABLE</span> usuarios (
+  id          UUID     <span class="key">DEFAULT</span> gen_random_uuid() <span class="key">PRIMARY KEY</span>,
+  nome        TEXT     <span class="key">NOT NULL UNIQUE</span>,
+  senha_hash  TEXT     <span class="key">NOT NULL</span>,          <span class="comment">-- SHA-256 hex</span>
+  ativo       BOOLEAN  <span class="key">NOT NULL DEFAULT</span> <span class="val">true</span>,
+  permissoes  JSONB    <span class="key">NOT NULL DEFAULT</span> <span class="str">'[]'</span>::jsonb, <span class="comment">-- array de strings</span>
+  created_at  TIMESTAMPTZ <span class="key">NOT NULL DEFAULT</span> now()
+);</pre>
+
+      <p>O campo <code>permissoes</code> é um array JSON com os valores: <code>"produtos"</code>, <code>"clientes"</code>, <code>"lancamento"</code>, <code>"pedidos"</code>, <code>"relatorios"</code>, <code>"usuarios"</code>.</p>
+
+      <h3>Row Level Security (RLS)</h3>
+      <p>A tabela <code>usuarios</code> tem RLS ativado com política permissiva — o controle de acesso é feito na camada de aplicação (JavaScript). A chave pública (<em>anon key</em>) só permite as operações definidas pelas políticas.</p>
+      <div class="warn-tip"><strong>Atenção:</strong> Para aumentar a segurança em produção, crie políticas RLS mais restritivas no Supabase limitando INSERT/UPDATE/DELETE apenas a usuários autenticados via Supabase Auth.</div>
+    </div>
+
+    <!-- 4. AUTENTICAÇÃO -->
+    <div class="section" id="autenticacao">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        4. Sistema de autenticação
+      </div>
+      <p>A autenticação é implementada sem dependência de JWT ou sessão server-side. O fluxo é:</p>
+      <ol style="margin-bottom:1rem;">
+        <li>Usuário envia login + senha no <code>login.html</code>.</li>
+        <li>A senha é hasheada com <strong>SHA-256</strong> via Web Crypto API (<code>crypto.subtle.digest</code>).</li>
+        <li>O hash é comparado com o <code>senha_hash</code> na tabela <code>usuarios</code> no Supabase.</li>
+        <li>Se válido e ativo, os dados do usuário são gravados no <code>sessionStorage</code>.</li>
+        <li>Ao fechar a aba, a sessão é destruída automaticamente.</li>
+      </ol>
+
+      <h3>auth.js — funções públicas</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Função</th><th>Descrição</th></tr></thead>
+          <tbody>
+            <tr><td><code>checkAuth(perm?)</code></td><td>Verifica se há sessão. Se <code>perm</code> for informado, valida a permissão. Redireciona para <code>login.html</code> se não autorizado.</td></tr>
+            <tr><td><code>getSession()</code></td><td>Retorna o objeto de sessão <code>&#123; id, nome, permissoes &#125;</code> ou <code>null</code>.</td></tr>
+            <tr><td><code>setSession(data)</code></td><td>Grava os dados de sessão no <code>sessionStorage</code>.</td></tr>
+            <tr><td><code>logout()</code></td><td>Remove a sessão e redireciona para <code>login.html</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Exemplo de uso em uma nova página</h3>
+      <pre><span class="comment">&lt;!-- No &lt;head&gt; da página --&gt;</span>
+<span class="key">&lt;script</span> src=<span class="str">"auth.js"</span><span class="key">&gt;&lt;/script&gt;</span>
+<span class="key">&lt;script&gt;</span>checkAuth(<span class="str">'minha_permissao'</span>);<span class="key">&lt;/script&gt;</span></pre>
+    </div>
+
+    <!-- 5. PERMISSÕES -->
+    <div class="section" id="permissoes">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        5. Sistema de permissões
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Permissão</th><th>Página protegida</th><th>Visibilidade</th></tr></thead>
+          <tbody>
+            <tr><td><code>produtos</code></td><td>produtos.html</td><td><span class="badge badge-all">Todos os usuários</span></td></tr>
+            <tr><td><code>clientes</code></td><td>clientes.html</td><td><span class="badge badge-all">Todos os usuários</span></td></tr>
+            <tr><td><code>lancamento</code></td><td>lancamento.html</td><td><span class="badge badge-all">Todos os usuários</span></td></tr>
+            <tr><td><code>pedidos</code></td><td>pedidos.html</td><td><span class="badge badge-all">Todos os usuários</span></td></tr>
+            <tr><td><code>relatorios</code></td><td>relatorios.html</td><td><span class="badge badge-all">Todos os usuários</span></td></tr>
+            <tr><td><code>usuarios</code></td><td>usuarios.html, manual-tecnico.html, Configurações</td><td><span class="badge badge-admin">Somente admin</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Os itens do nav com <code>data-perm="X"</code> são ocultados via CSS (<code>display:none</code>) pelo <code>auth.js</code> quando o usuário não possui a permissão correspondente.</p>
+      <div class="tip"><strong>Importante:</strong> A ocultação no nav é visual. A proteção real acontece no <code>checkAuth()</code> chamado no <code>&lt;head&gt;</code> de cada página — o redirecionamento ocorre antes da página renderizar.</div>
+    </div>
+
+    <!-- 6. DEPLOY -->
+    <div class="section" id="deploy">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/></svg>
+        6. Deploy e hospedagem
+      </div>
+      <p>O sistema é hospedado no <strong>GitHub Pages</strong> a partir do branch <code>main</code> do repositório <a href="https://github.com/felipeceneri/flores-bruna" target="_blank">felipeceneri/flores-bruna</a>.</p>
+      <h3>URL de produção</h3>
+      <pre>https://felipeceneri.github.io/flores-bruna/login.html</pre>
+      <h3>Publicar uma atualização</h3>
+      <pre>git add .
+git commit -m "Descrição da mudança"
+git push origin main
+<span class="comment"># GitHub Pages faz o deploy automaticamente em ~1-2 minutos</span></pre>
+    </div>
+
+    <!-- 7. NOVA PÁGINA -->
+    <div class="section" id="nova-pagina">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        7. Como adicionar uma nova página
+      </div>
+      <ol>
+        <li>Crie o arquivo <code>nova-pagina.html</code> copiando a estrutura de <code>clientes.html</code>.</li>
+        <li>No <code>&lt;head&gt;</code>, adicione:<br><pre><span class="key">&lt;script</span> src=<span class="str">"auth.js"</span><span class="key">&gt;&lt;/script&gt;</span>
+<span class="key">&lt;script&gt;</span>checkAuth(<span class="str">'nova_permissao'</span>);<span class="key">&lt;/script&gt;</span></pre></li>
+        <li>Adicione <code>"nova_permissao"</code> ao campo <code>permissoes</code> dos usuários que devem ter acesso — via página de Usuários ou SQL direto.</li>
+        <li>Adicione o item no nav de todas as páginas com <code>data-perm="nova_permissao"</code>.</li>
+        <li>Adicione a permissão aos checkboxes na página <code>usuarios.html</code> (seção <code>#permGrid</code>) e ao objeto <code>PERM_LABELS</code>.</li>
+      </ol>
+    </div>
+
+    <!-- 8. BACKUP -->
+    <div class="section" id="backup">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        8. Backup e manutenção
+      </div>
+      <h3>Exportar dados do Supabase</h3>
+      <p>No painel do Supabase, acesse <strong>Table Editor</strong> → selecione a tabela → clique em <strong>Export</strong> (CSV ou JSON). Para backup completo, use o <strong>SQL Editor</strong>:</p>
+      <pre>COPY (SELECT * FROM usuarios)   TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM SA1)        TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM SB2)        TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM SC5)        TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM SC6)        TO STDOUT WITH CSV HEADER;
+COPY (SELECT * FROM produtos)   TO STDOUT WITH CSV HEADER;</pre>
+      <h3>Monitoramento</h3>
+      <p>No Supabase, acesse <strong>Logs</strong> para ver queries em tempo real e detectar erros de acesso.</p>
+    </div>
+
+    <!-- 9. REDEFINIR SENHA -->
+    <div class="section" id="senha">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/><circle cx="12" cy="16" r="1"/></svg>
+        9. Redefinir senha de emergência
+      </div>
+      <p>Caso todos os admins percam acesso, siga os passos:</p>
+      <ol>
+        <li>Abra o console do navegador (F12) em qualquer página e execute:<pre>crypto.subtle.digest('SHA-256', new TextEncoder().encode('NOVA_SENHA'))
+  .then(b => console.log(Array.from(new Uint8Array(b))
+    .map(x => x.toString(16).padStart(2,'0')).join('')))</pre></li>
+        <li>Copie o hash gerado (string hexadecimal de 64 caracteres).</li>
+        <li>No Supabase → SQL Editor, execute:<pre><span class="key">UPDATE</span> usuarios
+<span class="key">SET</span> senha_hash = <span class="str">'HASH_COPIADO_AQUI'</span>, ativo = <span class="val">true</span>
+<span class="key">WHERE</span> nome = <span class="str">'NOME_DO_USUARIO'</span>;</pre></li>
+      </ol>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<script>
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('iconMoon').style.display = t === 'light' ? 'none' : '';
+    document.getElementById('iconSun').style.display  = t === 'light' ? '' : 'none';
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  }
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+  }
+  (function() { applyTheme(localStorage.getItem('theme') || 'dark'); })();
+</script>
+</body>
+</html>

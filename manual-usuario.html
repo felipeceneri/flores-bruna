@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EstoqueApp — Manual do Usuário</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="auth.js"></script>
+  <script>checkAuth();</script>
+  <style>
+    :root {
+      --bg: #0F1117; --surface: #181C27; --surface2: #1E2336;
+      --border: #2A3050; --accent: #4F6FFF; --accent-h: #3A56E8;
+      --danger: #E24B4A; --success: #3DAA6B; --warn: #EF9F27;
+      --text: #E8ECF4; --text-2: #8A93AF; --text-3: #505878;
+      --radius: 10px; --radius-lg: 16px; --shadow: 0 4px 24px rgba(0,0,0,.45);
+      --font: 'Inter', system-ui, sans-serif; --transition: .18s ease;
+    }
+    [data-theme="light"] {
+      --bg: #F4F6FB; --surface: #FFFFFF; --surface2: #EEF1F8;
+      --border: #D3DAE8; --text: #1A2033; --text-2: #4A5578; --text-3: #8A93AF;
+      --shadow: 0 4px 24px rgba(0,0,0,.10); --success: #2E9057;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; transition: background var(--transition), color var(--transition); }
+    button { font-family: var(--font); cursor: pointer; border: none; }
+    a { color: inherit; text-decoration: none; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .app { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar { width: 220px; flex-shrink: 0; background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 1.5rem 1rem;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+      transition: transform var(--transition), background var(--transition); }
+    .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 2rem; padding: 0 .5rem; }
+    .logo-icon { width: 30px; height: 30px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 16px; height: 16px; fill: #fff; }
+    .logo-name { font-size: 15px; font-weight: 700; letter-spacing: -.3px; }
+    .logo-name span { color: var(--accent); }
+    .nav-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 1px; padding: 0 .5rem; margin-bottom: .5rem; margin-top: 1.25rem; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: .55rem .75rem; border-radius: var(--radius);
+      font-size: 13.5px; font-weight: 500; color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition); margin-bottom: 2px; text-decoration: none; }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(79,111,255,.15); color: var(--accent); }
+    .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+    .sidebar-footer { margin-top: auto; padding: .75rem .5rem 0; border-top: 1px solid var(--border); }
+    @media (max-width: 768px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } .main { margin-left: 0 !important; } .hamburger { display: flex !important; } }
+
+    /* MAIN */
+    .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; }
+    .topbar { position: sticky; top: 0; z-index: 50; background: var(--bg); border-bottom: 1px solid var(--border);
+      padding: .85rem 1.75rem; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .page-title { font-size: 15px; font-weight: 600; }
+    .page-breadcrumb { font-size: 12px; color: var(--text-3); }
+    .theme-toggle { background: var(--surface2); border: 1px solid var(--border); color: var(--text-2);
+      cursor: pointer; border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center; }
+    .theme-toggle svg { width: 16px; height: 16px; display: block; }
+    .hamburger { display: none; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 6px; color: var(--text-2); align-items: center; }
+    .hamburger svg { width: 16px; height: 16px; display: block; }
+
+    /* CONTENT */
+    .content { flex: 1; padding: 2rem 2.5rem; max-width: 860px; }
+
+    /* TOC */
+    .toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; }
+    .toc-title { font-size: 13px; font-weight: 600; color: var(--text-2); text-transform: uppercase;
+      letter-spacing: .6px; margin-bottom: .75rem; }
+    .toc ol { padding-left: 1.25rem; display: flex; flex-direction: column; gap: .3rem; }
+    .toc li { font-size: 13.5px; }
+    .toc a { color: var(--accent); }
+    .toc a:hover { text-decoration: underline; }
+
+    /* SECTIONS */
+    .section { margin-bottom: 3rem; }
+    .section-title { font-size: 20px; font-weight: 700; margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 10px; }
+    .section-title svg { width: 22px; height: 22px; color: var(--accent); flex-shrink: 0; }
+    h3 { font-size: 15px; font-weight: 600; margin: 1.5rem 0 .6rem; }
+    p { font-size: 14px; color: var(--text-2); line-height: 1.75; margin-bottom: .75rem; }
+    p strong { color: var(--text); }
+    ul, ol { padding-left: 1.4rem; margin-bottom: .75rem; }
+    li { font-size: 14px; color: var(--text-2); line-height: 1.75; }
+    li strong { color: var(--text); }
+
+    .tip { background: rgba(79,111,255,.08); border: 1px solid rgba(79,111,255,.2); border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius) var(--radius) 0; padding: .75rem 1rem; margin: 1rem 0; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+    .tip strong { color: var(--accent); }
+    .warn-tip { background: rgba(239,159,39,.08); border: 1px solid rgba(239,159,39,.2); border-left: 3px solid var(--warn);
+      border-radius: 0 var(--radius) var(--radius) 0; padding: .75rem 1rem; margin: 1rem 0; font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+    .warn-tip strong { color: var(--warn); }
+
+    .step-list { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+    .step-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; color: var(--text-2); line-height: 1.6; }
+    .step-num { min-width: 24px; height: 24px; background: var(--accent); color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+
+    .badge { display: inline-flex; align-items: center; border-radius: 99px; padding: 2px 9px;
+      font-size: 11px; font-weight: 600; background: rgba(79,111,255,.12); border: 1px solid rgba(79,111,255,.2); color: #8fa8ff; }
+
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 99; }
+    .sidebar-overlay.show { display: block; }
+  </style>
+</head>
+<body>
+<div class="app">
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14L4 17m8 4V11"/></svg></div>
+    <span class="logo-name">Estoque<span>App</span></span>
+  </div>
+  <span class="nav-label">Menu</span>
+  <a class="nav-item" href="produtos.html" data-perm="produtos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg> Produtos
+  </a>
+  <a class="nav-item" href="clientes.html" data-perm="clientes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg> Clientes
+  </a>
+  <a class="nav-item" href="lancamento.html" data-perm="lancamento">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H5a2 2 0 00-2 2v2h18v-2a2 2 0 00-2-2h-4M12 3v10m0 0l-3-3m3 3l3-3"/></svg> Lançamento
+  </a>
+  <a class="nav-item" href="pedidos.html" data-perm="pedidos">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> Pedidos
+  </a>
+  <a class="nav-item" href="relatorios.html" data-perm="relatorios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Relatórios
+  </a>
+  <a class="nav-item" href="usuarios.html" data-perm="usuarios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="11" x2="19" y2="17"/><line x1="22" y1="14" x2="16" y2="14"/></svg> Usuários
+  </a>
+  <span class="nav-label">Config</span>
+  <a class="nav-item" href="produtos.html" data-perm="usuarios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg> Configurações
+  </a>
+  <a class="nav-item active" href="manual-usuario.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> Manual do Usuário
+  </a>
+  <a class="nav-item" href="manual-tecnico.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> Manual Técnico
+  </a>
+  <div class="sidebar-footer"></div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <div>
+        <div class="page-title">Manual do Usuário</div>
+        <div class="page-breadcrumb">EstoqueApp › Manual do Usuário</div>
+      </div>
+    </div>
+    <div>
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- TOC -->
+    <div class="toc">
+      <div class="toc-title">Índice</div>
+      <ol>
+        <li><a href="#login">Login e acesso ao sistema</a></li>
+        <li><a href="#produtos">Cadastro de Produtos</a></li>
+        <li><a href="#clientes">Cadastro de Clientes</a></li>
+        <li><a href="#lancamento">Lançamento de Estoque</a></li>
+        <li><a href="#pedidos">Pedidos</a></li>
+        <li><a href="#relatorios">Relatórios</a></li>
+        <li><a href="#usuarios">Gerenciamento de Usuários</a></li>
+        <li><a href="#dicas">Dicas e atalhos</a></li>
+      </ol>
+    </div>
+
+    <!-- 1. LOGIN -->
+    <div class="section" id="login">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        1. Login e acesso ao sistema
+      </div>
+      <h3>Como entrar no sistema</h3>
+      <ul class="step-list">
+        <li><span class="step-num">1</span>Abra o sistema pelo link fornecido pelo administrador.</li>
+        <li><span class="step-num">2</span>Digite seu <strong>nome de usuário</strong> e <strong>senha</strong> nos campos indicados.</li>
+        <li><span class="step-num">3</span>Clique em <strong>Entrar</strong>. Você será redirecionado para a primeira página que tiver permissão de acesso.</li>
+      </ul>
+      <div class="tip"><strong>Dica:</strong> Caso esqueça sua senha, solicite a um administrador do sistema que redefina sua senha na página de Usuários.</div>
+      <h3>Como sair do sistema</h3>
+      <p>Em qualquer página, clique no botão <strong>Sair</strong> localizado no rodapé da barra lateral esquerda, ao lado do seu nome de usuário. Isso encerrará sua sessão imediatamente.</p>
+      <div class="warn-tip"><strong>Atenção:</strong> A sessão é encerrada automaticamente quando você fecha a aba do navegador. Sempre clique em Sair ao usar computadores compartilhados.</div>
+    </div>
+
+    <!-- 2. PRODUTOS -->
+    <div class="section" id="produtos">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        2. Cadastro de Produtos
+      </div>
+      <p>A página de Produtos permite gerenciar o catálogo de itens do estoque.</p>
+      <h3>Cadastrar novo produto</h3>
+      <ul class="step-list">
+        <li><span class="step-num">1</span>Preencha o <strong>Código</strong> do produto (ex: CAM001).</li>
+        <li><span class="step-num">2</span>Digite o <strong>Nome</strong> do produto.</li>
+        <li><span class="step-num">3</span>Clique em <strong>Cadastrar produto</strong>.</li>
+      </ul>
+      <h3>Editar produto</h3>
+      <p>Na lista de produtos, clique no ícone de <strong>lápis (editar)</strong> ao lado do produto desejado. O formulário será preenchido automaticamente. Faça as alterações e clique em <strong>Salvar alterações</strong>.</p>
+      <h3>Excluir produto</h3>
+      <p>Clique no ícone de <strong>lixeira</strong> e confirme a exclusão na janela que aparecer.</p>
+      <div class="warn-tip"><strong>Atenção:</strong> Produtos vinculados a lançamentos ou pedidos não devem ser excluídos para preservar o histórico.</div>
+    </div>
+
+    <!-- 3. CLIENTES -->
+    <div class="section" id="clientes">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        3. Cadastro de Clientes
+      </div>
+      <p>Gerencie a base de clientes que fazem pedidos no sistema.</p>
+      <h3>Cadastrar novo cliente</h3>
+      <ul class="step-list">
+        <li><span class="step-num">1</span>Preencha o <strong>Nome</strong> do cliente (obrigatório).</li>
+        <li><span class="step-num">2</span>Preencha o <strong>Celular</strong> com DDD (opcional).</li>
+        <li><span class="step-num">3</span>Clique em <strong>Cadastrar cliente</strong>. O código será gerado automaticamente.</li>
+      </ul>
+      <h3>Buscar cliente</h3>
+      <p>Use o campo de <strong>busca</strong> no topo da lista para encontrar clientes pelo nome.</p>
+      <h3>Editar e excluir</h3>
+      <p>Use os botões de ação na coluna direita da lista de clientes.</p>
+    </div>
+
+    <!-- 4. LANÇAMENTO -->
+    <div class="section" id="lancamento">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 17H5a2 2 0 00-2 2v2h18v-2a2 2 0 00-2-2h-4M12 3v10m0 0l-3-3m3 3l3-3"/></svg>
+        4. Lançamento de Estoque
+      </div>
+      <p>Registre a entrada de mercadorias no estoque. Cada lançamento adiciona quantidade ao saldo disponível para venda.</p>
+      <h3>Registrar entrada</h3>
+      <ul class="step-list">
+        <li><span class="step-num">1</span>Selecione o <strong>Produto</strong> na lista ou pesquise pelo nome.</li>
+        <li><span class="step-num">2</span>Informe o <strong>Tamanho</strong> e a <strong>Cor</strong> (se aplicável).</li>
+        <li><span class="step-num">3</span>Digite a <strong>Quantidade</strong> que está sendo recebida.</li>
+        <li><span class="step-num">4</span>Clique em <strong>Registrar lançamento</strong>.</li>
+      </ul>
+      <div class="tip"><strong>Dica:</strong> O saldo do estoque é calculado automaticamente como a soma de todas as entradas menos as saídas geradas pelos pedidos.</div>
+    </div>
+
+    <!-- 5. PEDIDOS -->
+    <div class="section" id="pedidos">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        5. Pedidos
+      </div>
+      <p>Crie e gerencie pedidos de clientes, com controle automático do estoque.</p>
+      <h3>Criar novo pedido</h3>
+      <ul class="step-list">
+        <li><span class="step-num">1</span>Digite o nome do <strong>Cliente</strong> no campo de busca e selecione-o.</li>
+        <li><span class="step-num">2</span>Adicione os <strong>produtos</strong> ao pedido — selecione produto, tamanho, cor, quantidade e valor unitário.</li>
+        <li><span class="step-num">3</span>Adicione uma <strong>observação</strong> se necessário.</li>
+        <li><span class="step-num">4</span>Clique em <strong>Confirmar pedido</strong>. O estoque é baixado automaticamente.</li>
+      </ul>
+      <h3>Marcar pedido como entregue</h3>
+      <p>Na lista de pedidos, clique no botão <strong>Marcar como entregue</strong>. Uma mensagem de confirmação via WhatsApp pode ser enviada ao cliente automaticamente.</p>
+      <div class="tip"><strong>Dica:</strong> Pedidos entregues ficam marcados em verde na lista para fácil identificação.</div>
+    </div>
+
+    <!-- 6. RELATÓRIOS -->
+    <div class="section" id="relatorios">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        6. Relatórios
+      </div>
+      <p>Visualize indicadores de desempenho e análises do negócio em tempo real.</p>
+      <h3>Indicadores disponíveis</h3>
+      <ul>
+        <li><strong>Total de vendas</strong> — valor faturado no período.</li>
+        <li><strong>Número de pedidos</strong> — quantidade de pedidos realizados.</li>
+        <li><strong>Produtos em estoque</strong> — total de itens disponíveis.</li>
+        <li><strong>Produtos mais vendidos</strong> — ranking com os top produtos.</li>
+        <li><strong>Pedidos recentes</strong> — lista dos últimos pedidos.</li>
+      </ul>
+      <h3>Filtrar por período</h3>
+      <p>Use as abas de período no topo da página para visualizar dados do <strong>dia</strong>, <strong>semana</strong>, <strong>mês</strong> ou <strong>ano</strong>.</p>
+    </div>
+
+    <!-- 7. USUÁRIOS -->
+    <div class="section" id="usuarios">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="11" x2="19" y2="17"/><line x1="22" y1="14" x2="16" y2="14"/></svg>
+        7. Gerenciamento de Usuários <span class="badge" style="margin-left:8px;">Admin</span>
+      </div>
+      <p>Disponível apenas para usuários com permissão de <strong>Usuários</strong>.</p>
+      <h3>Criar novo usuário</h3>
+      <ul class="step-list">
+        <li><span class="step-num">1</span>Informe o <strong>nome de usuário</strong> (será usado no login).</li>
+        <li><span class="step-num">2</span>Defina uma <strong>senha</strong> de ao menos 6 caracteres.</li>
+        <li><span class="step-num">3</span>Marque o status como <strong>Ativo</strong> para permitir acesso.</li>
+        <li><span class="step-num">4</span>Selecione as <strong>permissões</strong> (páginas que o usuário poderá acessar).</li>
+        <li><span class="step-num">5</span>Clique em <strong>Cadastrar usuário</strong>.</li>
+      </ul>
+      <h3>Alterar senha de um usuário</h3>
+      <p>Clique em <strong>Editar</strong> ao lado do usuário, preencha o campo de nova senha e salve. Deixe o campo em branco para manter a senha atual.</p>
+      <h3>Desativar acesso</h3>
+      <p>Edite o usuário e desmarque a opção <strong>Usuário ativo</strong>. O usuário não conseguirá mais fazer login, mas seus dados são mantidos.</p>
+    </div>
+
+    <!-- 8. DICAS -->
+    <div class="section" id="dicas">
+      <div class="section-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        8. Dicas e atalhos
+      </div>
+      <ul>
+        <li><strong>Tema claro/escuro:</strong> clique no ícone de lua/sol no canto superior direito de qualquer página.</li>
+        <li><strong>Busca rápida:</strong> todas as listas possuem campo de busca no topo para filtrar registros.</li>
+        <li><strong>Cancelar edição:</strong> ao editar um registro, clique em <strong>Cancelar</strong> para voltar ao modo de criação sem salvar.</li>
+        <li><strong>Sessão segura:</strong> a sessão expira automaticamente ao fechar o navegador. Em computadores compartilhados, sempre clique em Sair.</li>
+        <li><strong>WhatsApp:</strong> ao marcar um pedido como entregue, o sistema abre o WhatsApp com uma mensagem pronta para o cliente.</li>
+      </ul>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<script>
+  function applyTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    document.getElementById('iconMoon').style.display = t === 'light' ? 'none' : '';
+    document.getElementById('iconSun').style.display  = t === 'light' ? '' : 'none';
+  }
+  function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  }
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('sidebarOverlay').classList.toggle('show');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('show');
+  }
+  (function() { applyTheme(localStorage.getItem('theme') || 'dark'); })();
+</script>
+</body>
+</html>
