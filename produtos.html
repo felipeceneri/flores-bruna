@@ -416,7 +416,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
       Manual do Usuário
     </a>
-    <a class="nav-item" href="manual-tecnico.html">
+    <a class="nav-item" href="manual-tecnico.html" data-perm="usuarios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
       Manual Técnico
     </a>
@@ -562,6 +562,14 @@ async function salvarProduto(prod) {
 
 async function excluirProduto(id) {
   if (supabase) {
+    const [{ count: cLanc }, { count: cPed }] = await Promise.all([
+      supabase.from('SB2').select('id', { count: 'exact', head: true }).eq('produto_id', id),
+      supabase.from('SC6').select('id', { count: 'exact', head: true }).eq('produto_id', id)
+    ]);
+    if ((cLanc || 0) > 0 || (cPed || 0) > 0) {
+      showToast('Produto vinculado a lançamentos ou pedidos e não pode ser excluído.', 'error');
+      return false;
+    }
     const { error } = await supabase.from('produtos').delete().eq('id', id);
     if (error) { showToast('Erro ao remover: ' + error.message, 'error'); return false; }
   }
