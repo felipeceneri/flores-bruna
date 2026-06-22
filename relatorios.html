@@ -679,7 +679,7 @@
     const total      = pedidos.length;
     const entregues  = pedidos.filter(p => p.entregue).length;
     const pendentes  = total - entregues;
-    const faturamento = pedidos.reduce((s, p) => {
+    const faturamento = pedidos.filter(p => p.entregue).reduce((s, p) => {
       return s + (p.SC6 || []).reduce((si, i) => si + (parseFloat(i.valor_total) || 0), 0);
     }, 0);
 
@@ -715,7 +715,7 @@
   function renderChartLinha(pedidos) {
     // Agrupa por data
     const map = {};
-    pedidos.forEach(p => {
+    pedidos.filter(p => p.entregue).forEach(p => {
       if (!p.data_pedido) return;
       const d = p.data_pedido;
       if (!map[d]) map[d] = 0;
