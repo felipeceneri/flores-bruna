@@ -256,6 +256,10 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
     Pedidos
   </a>
+  <a class="nav-item" href="contas-receber.html" data-perm="contas-receber">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="12" cy="14" r="2"/><path d="M12 12v1M12 15v1"/></svg>
+    Contas a Receber
+  </a>
   <a class="nav-item" href="relatorios.html" data-perm="relatorios">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     Relatórios
@@ -344,6 +348,7 @@
               <label class="perm-item"><input type="checkbox" value="clientes" /> Clientes</label>
               <label class="perm-item"><input type="checkbox" value="lancamento" /> Lançamento</label>
               <label class="perm-item"><input type="checkbox" value="pedidos" /> Pedidos</label>
+              <label class="perm-item"><input type="checkbox" value="contas-receber" /> Contas a Receber</label>
               <label class="perm-item"><input type="checkbox" value="relatorios" /> Relatórios</label>
               <label class="perm-item"><input type="checkbox" value="usuarios" /> Usuários</label>
             </div>
@@ -463,7 +468,7 @@
   }
 
   // ── PERM HELPERS ──
-  const PERM_LABELS = { produtos: 'Produtos', clientes: 'Clientes', lancamento: 'Lançamento', pedidos: 'Pedidos', relatorios: 'Relatórios', usuarios: 'Usuários' };
+  const PERM_LABELS = { produtos: 'Produtos', clientes: 'Clientes', lancamento: 'Lançamento', pedidos: 'Pedidos', 'contas-receber': 'Contas a Receber', relatorios: 'Relatórios', usuarios: 'Usuários' };
 
   function getPermsFromForm() {
     return Array.from(document.querySelectorAll('#permGrid input:checked')).map(c => c.value);

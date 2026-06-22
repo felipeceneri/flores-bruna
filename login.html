@@ -253,7 +253,7 @@
       }));
 
       const perms = data.permissoes || [];
-      const pages = ['produtos','clientes','lancamento','pedidos','relatorios','usuarios'];
+      const pages = ['produtos','clientes','lancamento','pedidos','contas-receber','relatorios','usuarios'];
       const first = pages.find(p => perms.includes(p)) || 'produtos';
       window.location.replace(first + '.html');
     } catch (err) {
