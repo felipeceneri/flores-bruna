@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Relatório Contas a Receber – EstoqueApp</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+  <script src="auth.js" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #222536;
+      --border: #2e3250; --text: #e8eaf6; --text-2: #9fa3c0; --text-3: #5c6080;
+      --accent: #4f6fff; --accent2: #6c8cff;
+      --success: #22c55e; --danger: #ef4444; --warning: #f59e0b;
+      --radius: 12px; --shadow: 0 4px 24px rgba(0,0,0,.4);
+    }
+    [data-theme="light"] {
+      --bg: #f0f2f9; --surface: #ffffff; --surface2: #f5f6fc;
+      --border: #dde1f0; --text: #1a1d2e; --text-2: #5c6080; --text-3: #9fa3c0;
+      --shadow: 0 4px 24px rgba(0,0,0,.08);
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      min-height: 100vh;
+      transition: background .2s, color .2s;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 240px;
+      min-height: 100vh;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+      transition: background .2s, border-color .2s;
+    }
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 24px 20px 20px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-icon svg {
+      width: 20px; height: 20px;
+      fill: none; stroke: #fff; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .logo-name {
+      font-size: 17px; font-weight: 700;
+      color: var(--text); letter-spacing: -.3px;
+    }
+    .logo-name span { color: var(--accent); }
+
+    .nav-label {
+      font-size: 10px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .8px;
+      color: var(--text-3);
+      padding: 16px 20px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 20px;
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      border-radius: 8px;
+      margin: 1px 8px;
+      transition: background .15s, color .15s;
+      cursor: pointer;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #fff; }
+    .nav-item svg {
+      width: 17px; height: 17px;
+      fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+      flex-shrink: 0;
+    }
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-footer .user-avatar {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+    }
+    .sidebar-footer .user-info { flex: 1; min-width: 0; }
+    .sidebar-footer .user-name { font-size: 13px; font-weight: 600; }
+    .sidebar-footer .user-role { font-size: 11px; color: var(--text-3); }
+
+    /* ── Main ── */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px;
+      position: sticky; top: 0; z-index: 50;
+      transition: background .2s, border-color .2s;
+    }
+    .topbar-left { display: flex; flex-direction: column; gap: 2px; }
+    .page-title { font-size: 20px; font-weight: 700; }
+    .breadcrumb { font-size: 12px; color: var(--text-3); }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn-icon {
+      width: 36px; height: 36px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background .15s;
+      color: var(--text-2);
+    }
+    .btn-icon:hover { background: var(--border); color: var(--text); }
+    .btn-icon svg {
+      width: 17px; height: 17px;
+      fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    .content { padding: 32px; flex: 1; }
+
+    /* ── Period filter ── */
+    .filter-bar {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 28px;
+    }
+    .filter-label { font-size: 13px; color: var(--text-2); margin-right: 4px; }
+    .period-btn {
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: 13px; font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .period-btn:hover { background: var(--surface2); color: var(--text); }
+    .period-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ── KPI Cards ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 24px;
+      display: flex; flex-direction: column; gap: 10px;
+      box-shadow: var(--shadow);
+      transition: background .2s, border-color .2s;
+    }
+    .kpi-top {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .kpi-label { font-size: 13px; color: var(--text-2); font-weight: 500; }
+    .kpi-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .kpi-icon svg {
+      width: 18px; height: 18px;
+      fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .kpi-icon.blue { background: rgba(79,111,255,.15); color: var(--accent); }
+    .kpi-icon.green { background: rgba(34,197,94,.15); color: var(--success); }
+    .kpi-icon.yellow { background: rgba(245,158,11,.15); color: var(--warning); }
+    .kpi-value { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+    .kpi-sub { font-size: 12px; color: var(--text-3); }
+
+    /* ── Charts grid ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .charts-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      transition: background .2s, border-color .2s;
+    }
+    .card-title {
+      font-size: 14px; font-weight: 600;
+      margin-bottom: 20px; color: var(--text);
+    }
+    .chart-wrap { position: relative; height: 240px; }
+    .chart-wrap-sm { position: relative; height: 220px; }
+
+    /* ── Table ── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+      transition: background .2s, border-color .2s;
+    }
+    .table-header {
+      padding: 20px 24px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px; font-weight: 600;
+    }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th {
+      text-align: left;
+      font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: .5px;
+      color: var(--text-3);
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+    td {
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--text-2);
+      border-bottom: 1px solid var(--border);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface2); color: var(--text); }
+
+    .badge {
+      display: inline-flex; align-items: center;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px; font-weight: 600;
+      text-transform: capitalize;
+    }
+    .badge-blue { background: rgba(79,111,255,.15); color: var(--accent2); }
+    .badge-green { background: rgba(34,197,94,.15); color: var(--success); }
+    .badge-yellow { background: rgba(245,158,11,.15); color: var(--warning); }
+    .badge-gray { background: rgba(156,163,175,.1); color: var(--text-3); }
+
+    .value-positive { color: var(--success); font-weight: 600; }
+
+    /* Loading */
+    .loading-overlay {
+      position: fixed; inset: 0;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 200;
+      flex-direction: column; gap: 16px;
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* empty state */
+    .empty-row td {
+      text-align: center;
+      color: var(--text-3);
+      font-style: italic;
+      padding: 32px;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { width: 60px; }
+      .sidebar .nav-item span, .sidebar .logo-name,
+      .sidebar .nav-label, .sidebar .user-info { display: none; }
+      .main { margin-left: 60px; }
+      .charts-grid, .charts-grid-3 { grid-template-columns: 1fr; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <span style="color:var(--text-2);font-size:14px;">Carregando dados…</span>
+</div>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <a href="index.html" class="sidebar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14L4 17m8 4V11"/></svg>
+    </div>
+    <span class="logo-name">Estoque<span>App</span></span>
+  </a>
+
+  <span class="nav-label">Menu</span>
+
+  <a href="produtos.html" class="nav-item" data-perm="produtos">
+    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    <span>Produtos</span>
+  </a>
+  <a href="clientes.html" class="nav-item" data-perm="clientes">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    <span>Clientes</span>
+  </a>
+  <a href="lancamento.html" class="nav-item" data-perm="lancamento">
+    <svg viewBox="0 0 24 24"><path d="M9 17H5a2 2 0 00-2 2v2h18v-2a2 2 0 00-2-2h-4M12 3v10m0 0l-3-3m3 3l3-3"/></svg>
+    <span>Lançamento</span>
+  </a>
+  <a href="pedidos.html" class="nav-item" data-perm="pedidos">
+    <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M9 5a2 2 0 012-2h2a2 2 0 012 2"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>
+    <span>Pedidos</span>
+  </a>
+  <a href="contas-receber.html" class="nav-item" data-perm="contas-receber">
+    <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z"/><circle cx="12" cy="14" r="2"/><path d="M12 12v1M12 15v1"/></svg>
+    <span>Contas a Receber</span>
+  </a>
+  <a href="relatorios.html" class="nav-item" data-perm="relatorios">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span>Rel. Faturamento</span>
+  </a>
+  <a href="relatorios-cr.html" class="nav-item active" data-perm="relatorios">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    <span>Rel. C. Receber</span>
+  </a>
+  <a href="usuarios.html" class="nav-item" data-perm="usuarios">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="11" x2="19" y2="17"/><line x1="22" y1="14" x2="16" y2="14"/></svg>
+    <span>Usuários</span>
+  </a>
+
+  <span class="nav-label">Config</span>
+
+  <a href="usuarios.html" class="nav-item" data-perm="usuarios">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <span>Configurações</span>
+  </a>
+  <a href="manual-usuario.html" class="nav-item">
+    <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    <span>Manual do Usuário</span>
+  </a>
+  <a href="manual-tecnico.html" class="nav-item" data-perm="usuarios">
+    <svg viewBox="0 0 24 24"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+    <span>Manual Técnico</span>
+  </a>
+
+  <div class="sidebar-footer">
+    <div class="user-avatar" id="sidebarAvatar">U</div>
+    <div class="user-info">
+      <div class="user-name" id="sidebarName">Usuário</div>
+      <div class="user-role" id="sidebarRole">–</div>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="page-title">Relatório Contas a Receber</div>
+      <div class="breadcrumb">EstoqueApp › Rel. C. Receber</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-icon" id="btnTheme" title="Alternar tema">
+        <svg id="iconMoon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1111.21 3a7 7 0 009.79 9.79z"/></svg>
+        <svg id="iconSun" viewBox="0 0 24 24" style="display:none"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- Period filter -->
+    <div class="filter-bar">
+      <span class="filter-label">Período:</span>
+      <button class="period-btn" data-days="7">7 dias</button>
+      <button class="period-btn active" data-days="30">30 dias</button>
+      <button class="period-btn" data-days="90">90 dias</button>
+      <button class="period-btn" data-days="0">Todos</button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Total Faturado</span>
+          <div class="kpi-icon blue">
+            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiFaturado">R$ –</div>
+        <div class="kpi-sub">Pedidos entregues</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Total Recebido</span>
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiRecebido" style="color:var(--success)">R$ –</div>
+        <div class="kpi-sub">Pagamentos registrados</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Saldo Pendente</span>
+          <div class="kpi-icon yellow">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiPendente" style="color:var(--warning)">R$ –</div>
+        <div class="kpi-sub">Faturado – Recebido</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top">
+          <span class="kpi-label">Pedidos Quitados</span>
+          <div class="kpi-icon green">
+            <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiQuitados" style="color:var(--success)">–</div>
+        <div class="kpi-sub">Pagamento total confirmado</div>
+      </div>
+    </div>
+
+    <!-- Row 1: Line chart + Doughnut forma pagamento -->
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Recebimentos por dia</div>
+        <div class="chart-wrap"><canvas id="chartLinha"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Distribuição por forma de pagamento</div>
+        <div class="chart-wrap"><canvas id="chartForma"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Row 2: Status pedidos + Bar ranking -->
+    <div class="charts-grid">
+      <div class="card">
+        <div class="card-title">Ranking de clientes (top 8)</div>
+        <div class="chart-wrap"><canvas id="chartRanking"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Status dos pedidos (geral)</div>
+        <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">Últimos pagamentos</div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Cliente</th>
+              <th>Forma</th>
+              <th style="text-align:right">Valor Pago</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaPagamentos">
+            <tr class="empty-row"><td colspan="4">Carregando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+  /* ── Auth ── */
+  if (typeof checkAuth === 'function') checkAuth('relatorios');
+
+  /* ── Theme ── */
+  (function () {
+    const saved = localStorage.getItem('theme') || 'dark';
+    if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+    const btnTheme = document.getElementById('btnTheme');
+    const iconMoon = document.getElementById('iconMoon');
+    const iconSun  = document.getElementById('iconSun');
+    function applyTheme(t) {
+      if (t === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        iconMoon.style.display = 'none';
+        iconSun.style.display  = '';
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+        iconMoon.style.display = '';
+        iconSun.style.display  = 'none';
+      }
+    }
+    applyTheme(saved);
+    btnTheme.addEventListener('click', () => {
+      const cur = localStorage.getItem('theme') || 'dark';
+      const next = cur === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('theme', next);
+      applyTheme(next);
+    });
+  })();
+
+  /* ── Supabase ── */
+  const SUPABASE_URL = 'https://zpoqwuuomkomgxphmkcn.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_eYE1OsNRUALPKBVWFYDk5g_cDu6Mgor';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
+
+  /* ── Helpers ── */
+  function fmtBRL(v) {
+    return 'R$ ' + Number(v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function fmtDate(d) {
+    if (!d) return '—';
+    const [y, m, dd] = d.split('-');
+    return dd + '/' + m + '/' + y;
+  }
+  function badgeForma(f) {
+    if (!f) return '<span class="badge badge-gray">—</span>';
+    const map = {
+      'dinheiro': 'badge-green',
+      'pix': 'badge-blue',
+      'cartão': 'badge-blue',
+      'cartao': 'badge-blue',
+      'boleto': 'badge-yellow',
+      'cheque': 'badge-yellow',
+      'transferência': 'badge-blue',
+      'transferencia': 'badge-blue',
+    };
+    const key = f.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    const cls = map[key] || 'badge-gray';
+    return `<span class="badge ${cls}">${f}</span>`;
+  }
+
+  /* ── Chart instances ── */
+  let chartLinha, chartForma, chartStatus, chartRanking;
+
+  /* ── Global data ── */
+  let _pedidos = [];
+  let _pagamentos = [];
+  let _activeDays = 30;
+
+  /* ── Chart colours ── */
+  const PALETTE = [
+    '#4f6fff','#22c55e','#f59e0b','#ef4444',
+    '#a855f7','#06b6d4','#ec4899','#84cc16',
+  ];
+
+  function getChartDefaults() {
+    const isDark = !document.documentElement.hasAttribute('data-theme');
+    return {
+      gridColor: isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)',
+      tickColor: isDark ? '#5c6080' : '#9fa3c0',
+      tooltipBg: isDark ? '#1a1d27' : '#ffffff',
+      tooltipText: isDark ? '#e8eaf6' : '#1a1d2e',
+    };
+  }
+
+  /* ── Filter pagamentos by period ── */
+  function filteredPagamentos() {
+    if (_activeDays === 0) return _pagamentos;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - _activeDays);
+    const cutStr = cutoff.toISOString().slice(0, 10);
+    return _pagamentos.filter(p => p.data_pagamento && p.data_pagamento >= cutStr);
+  }
+
+  /* ── Render KPIs ── */
+  function renderKPIs(mapFaturado, mapPago) {
+    const totalFaturado   = Object.values(mapFaturado).reduce((s, v) => s + v, 0);
+    const totalRecebido   = Object.values(mapPago).reduce((s, v) => s + v, 0);
+    const saldoPendente   = Math.max(0, totalFaturado - totalRecebido);
+    const pedidosQuitados = Object.keys(mapFaturado).filter(
+      id => (mapPago[id] || 0) >= mapFaturado[id] && mapFaturado[id] > 0
+    ).length;
+    document.getElementById('kpiFaturado').textContent = fmtBRL(totalFaturado);
+    document.getElementById('kpiRecebido').textContent = fmtBRL(totalRecebido);
+    document.getElementById('kpiPendente').textContent = fmtBRL(saldoPendente);
+    document.getElementById('kpiQuitados').textContent = pedidosQuitados;
+  }
+
+  /* ── Build/update charts ── */
+  function renderCharts(pags) {
+    const cd = getChartDefaults();
+
+    /* 1. Line: recebimentos por dia */
+    {
+      const byDay = {};
+      for (const p of pags) {
+        if (!p.data_pagamento) continue;
+        byDay[p.data_pagamento] = (byDay[p.data_pagamento] || 0) + Number(p.valor_pago || 0);
+      }
+      const labels = Object.keys(byDay).sort();
+      const values = labels.map(d => byDay[d]);
+      const labelsFormatted = labels.map(d => fmtDate(d));
+
+      if (chartLinha) {
+        chartLinha.data.labels = labelsFormatted;
+        chartLinha.data.datasets[0].data = values;
+        chartLinha.update();
+      } else {
+        chartLinha = new Chart(document.getElementById('chartLinha'), {
+          type: 'line',
+          data: {
+            labels: labelsFormatted,
+            datasets: [{
+              label: 'Recebido',
+              data: values,
+              borderColor: '#4f6fff',
+              backgroundColor: 'rgba(79,111,255,.12)',
+              fill: true,
+              tension: .4,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: cd.tooltipBg,
+                titleColor: cd.tooltipText,
+                bodyColor: cd.tooltipText,
+                borderColor: '#2e3250',
+                borderWidth: 1,
+                callbacks: { label: ctx => fmtBRL(ctx.raw) }
+              }
+            },
+            scales: {
+              x: { grid: { color: cd.gridColor }, ticks: { color: cd.tickColor, font: { size: 11 } } },
+              y: {
+                grid: { color: cd.gridColor },
+                ticks: { color: cd.tickColor, font: { size: 11 }, callback: v => fmtBRL(v) }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    /* 2. Doughnut: forma de pagamento */
+    {
+      const byForma = {};
+      for (const p of pags) {
+        const f = p.forma_pagamento || 'Não informado';
+        byForma[f] = (byForma[f] || 0) + Number(p.valor_pago || 0);
+      }
+      const labels = Object.keys(byForma);
+      const values = labels.map(k => byForma[k]);
+
+      if (chartForma) {
+        chartForma.data.labels = labels;
+        chartForma.data.datasets[0].data = values;
+        chartForma.update();
+      } else {
+        chartForma = new Chart(document.getElementById('chartForma'), {
+          type: 'doughnut',
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              backgroundColor: PALETTE,
+              borderColor: 'transparent',
+              hoverOffset: 6,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { color: cd.tickColor, font: { size: 11 }, boxWidth: 12 } },
+              tooltip: {
+                backgroundColor: cd.tooltipBg,
+                titleColor: cd.tooltipText,
+                bodyColor: cd.tooltipText,
+                borderColor: '#2e3250',
+                borderWidth: 1,
+                callbacks: { label: ctx => ' ' + fmtBRL(ctx.raw) }
+              }
+            },
+            cutout: '65%',
+          }
+        });
+      }
+    }
+
+    /* 4. Bar: ranking clientes */
+    {
+      const byCliente = {};
+      for (const p of pags) {
+        const c = p.cliente_nome || 'Desconhecido';
+        byCliente[c] = (byCliente[c] || 0) + Number(p.valor_pago || 0);
+      }
+      const sorted = Object.entries(byCliente).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const labels = sorted.map(e => e[0]);
+      const values = sorted.map(e => e[1]);
+
+      if (chartRanking) {
+        chartRanking.data.labels = labels;
+        chartRanking.data.datasets[0].data = values;
+        chartRanking.update();
+      } else {
+        chartRanking = new Chart(document.getElementById('chartRanking'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Valor Pago',
+              data: values,
+              backgroundColor: PALETTE,
+              borderRadius: 6,
+            }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            indexAxis: 'y',
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: cd.tooltipBg,
+                titleColor: cd.tooltipText,
+                bodyColor: cd.tooltipText,
+                borderColor: '#2e3250',
+                borderWidth: 1,
+                callbacks: { label: ctx => fmtBRL(ctx.raw) }
+              }
+            },
+            scales: {
+              x: {
+                grid: { color: cd.gridColor },
+                ticks: { color: cd.tickColor, font: { size: 11 }, callback: v => fmtBRL(v) }
+              },
+              y: { grid: { display: false }, ticks: { color: cd.tickColor, font: { size: 11 } } }
+            }
+          }
+        });
+      }
+    }
+  }
+
+  /* ── Status chart (all-time, only once) ── */
+  function renderStatusChart(mapFaturado, mapPago) {
+    const cd = getChartDefaults();
+    let pago = 0, parcial = 0, pendente = 0;
+    for (const id of Object.keys(mapFaturado)) {
+      const faturado = mapFaturado[id];
+      if (faturado <= 0) continue;
+      const recebido = mapPago[id] || 0;
+      if (recebido >= faturado) pago++;
+      else if (recebido > 0) parcial++;
+      else pendente++;
+    }
+
+    if (chartStatus) {
+      chartStatus.data.datasets[0].data = [pago, parcial, pendente];
+      chartStatus.update();
+      return;
+    }
+    chartStatus = new Chart(document.getElementById('chartStatus'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Quitado', 'Parcial', 'Pendente'],
+        datasets: [{
+          data: [pago, parcial, pendente],
+          backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'],
+          borderColor: 'transparent',
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: cd.tickColor, font: { size: 11 }, boxWidth: 12 } },
+          tooltip: {
+            backgroundColor: cd.tooltipBg,
+            titleColor: cd.tooltipText,
+            bodyColor: cd.tooltipText,
+            borderColor: '#2e3250',
+            borderWidth: 1,
+          }
+        },
+        cutout: '65%',
+      }
+    });
+  }
+
+  /* ── Table ── */
+  function renderTable(pags) {
+    const tbody = document.getElementById('tabelaPagamentos');
+    const last15 = pags.slice(0, 15);
+    if (!last15.length) {
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="4">Nenhum pagamento no período</td></tr>';
+      return;
+    }
+    tbody.innerHTML = last15.map(p => `
+      <tr>
+        <td>${fmtDate(p.data_pagamento)}</td>
+        <td style="color:var(--text)">${p.cliente_nome || '—'}</td>
+        <td>${badgeForma(p.forma_pagamento)}</td>
+        <td style="text-align:right" class="value-positive">${fmtBRL(p.valor_pago)}</td>
+      </tr>
+    `).join('');
+  }
+
+  /* ── Update views when period changes ── */
+  function updateViews() {
+    const pags = filteredPagamentos();
+    renderCharts(pags);
+    renderTable(pags);
+  }
+
+  /* ── Main load ── */
+  async function carregarDados() {
+    try {
+      const [{ data: pedidos, error: e1 }, { data: pagamentos, error: e2 }] = await Promise.all([
+        sb.from('SC5').select('id, SC6(valor_total)').eq('entregue', true),
+        sb.from('SE2').select('pedido_id, cliente_nome, valor_pago, forma_pagamento, data_pagamento')
+          .order('data_pagamento', { ascending: false })
+      ]);
+
+      if (e1) console.error('SC5 error:', e1);
+      if (e2) console.error('SE2 error:', e2);
+
+      _pedidos = pedidos || [];
+      _pagamentos = pagamentos || [];
+
+      /* Build maps */
+      const mapFaturado = {};
+      for (const p of _pedidos) {
+        mapFaturado[p.id] = (p.SC6 || []).reduce((s, i) => s + Number(i.valor_total || 0), 0);
+      }
+
+      const mapPago = {};
+      for (const pg of _pagamentos) {
+        mapPago[pg.pedido_id] = (mapPago[pg.pedido_id] || 0) + Number(pg.valor_pago || 0);
+      }
+
+      renderKPIs(mapFaturado, mapPago);
+      renderStatusChart(mapFaturado, mapPago);
+      updateViews();
+
+    } catch (err) {
+      console.error('Erro ao carregar dados:', err);
+    } finally {
+      document.getElementById('loadingOverlay').style.display = 'none';
+    }
+  }
+
+  /* ── Period buttons ── */
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _activeDays = parseInt(btn.dataset.days, 10);
+      updateViews();
+    });
+  });
+
+  /* ── Start ── */
+  carregarDados();
+</script>
+</body>
+</html>

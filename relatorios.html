@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EstoqueApp — Relatórios</title>
+  <title>EstoqueApp — Relatório de Faturamento</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
@@ -270,7 +270,11 @@
     </a>
     <a class="nav-item active" href="relatorios.html" data-perm="relatorios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Relatórios
+      Rel. Faturamento
+    </a>
+    <a class="nav-item" href="relatorios-cr.html" data-perm="relatorios">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      Rel. C. Receber
     </a>
     <a class="nav-item" href="usuarios.html" data-perm="usuarios">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/><line x1="19" y1="11" x2="19" y2="17"/><line x1="22" y1="14" x2="16" y2="14"/></svg>
@@ -307,8 +311,8 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div>
-          <div class="page-title">Relatórios de Vendas</div>
-          <div class="page-breadcrumb">EstoqueApp › Relatórios</div>
+          <div class="page-title">Relatório de Faturamento</div>
+          <div class="page-breadcrumb">EstoqueApp › Rel. Faturamento</div>
         </div>
       </div>
       <div class="topbar-right">
@@ -338,7 +342,7 @@
       <!-- Filtros -->
       <div class="filters-bar">
         <div>
-          <h2 id="dashTitle">Visão geral de vendas</h2>
+          <h2 id="dashTitle">Visão geral de faturamento</h2>
           <div class="filters-info" id="filtersInfo" style="display:none;">
             <span>Filtrando por:</span>
             <span class="client-badge" id="clienteBadge" onclick="limparFiltroCliente()">
@@ -630,11 +634,11 @@
       clearBtn.style.display  = 'flex';
       badge.style.display     = 'flex';
       badgeName.textContent   = clienteFiltro;
-      title.textContent       = 'Vendas — ' + clienteFiltro;
+      title.textContent       = 'Faturamento — ' + clienteFiltro;
     } else {
       clearBtn.style.display  = 'none';
       badge.style.display     = 'none';
-      title.textContent       = 'Visão geral de vendas';
+      title.textContent       = 'Visão geral de faturamento';
     }
   }
 
