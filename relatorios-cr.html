@@ -156,9 +156,46 @@
     /* ── Period filter ── */
     .filter-bar {
       display: flex; align-items: center; gap: 8px;
-      margin-bottom: 28px;
+      margin-bottom: 28px; flex-wrap: wrap;
     }
     .filter-label { font-size: 13px; color: var(--text-2); margin-right: 4px; }
+    .filter-sep { width: 1px; height: 22px; background: var(--border); margin: 0 4px; }
+    .cli-filter-wrap { position: relative; display: flex; align-items: center; }
+    .cli-filter-input {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 6px 32px 6px 32px;
+      font-size: 13px; color: var(--text); outline: none; width: 200px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .cli-filter-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,111,255,.15); }
+    .cli-filter-input::placeholder { color: var(--text-3); }
+    .cli-icon {
+      position: absolute; left: 9px; width: 14px; height: 14px;
+      color: var(--text-3); pointer-events: none;
+    }
+    .cli-clear {
+      position: absolute; right: 7px; background: none; border: none;
+      color: var(--text-3); cursor: pointer; padding: 2px;
+      display: none; line-height: 0;
+      transition: color .15s;
+    }
+    .cli-clear:hover { color: var(--danger); }
+    .cli-clear svg { width: 13px; height: 13px; }
+    .cli-dropdown {
+      display: none; position: absolute; top: calc(100% + 5px); left: 0;
+      min-width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: var(--shadow); z-index: 200;
+      overflow: hidden; max-height: 200px; overflow-y: auto;
+    }
+    .cli-dropdown.open { display: block; }
+    .cli-dd-item {
+      padding: 9px 14px; font-size: 13px; cursor: pointer;
+      border-bottom: 1px solid var(--border); color: var(--text-2);
+      transition: background .12s, color .12s;
+    }
+    .cli-dd-item:last-child { border-bottom: none; }
+    .cli-dd-item:hover, .cli-dd-item.hl { background: var(--surface2); color: var(--text); }
+    .cli-dd-empty { padding: 10px 14px; font-size: 12px; color: var(--text-3); text-align: center; }
     .period-btn {
       padding: 7px 16px;
       border-radius: 8px;
@@ -424,6 +461,21 @@
       <button class="period-btn active" data-days="30">30 dias</button>
       <button class="period-btn" data-days="90">90 dias</button>
       <button class="period-btn" data-days="0">Todos</button>
+
+      <div class="filter-sep"></div>
+      <span class="filter-label">Cliente:</span>
+      <div class="cli-filter-wrap" id="cliWrap">
+        <svg class="cli-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="cli-filter-input" id="cliInput" type="text" placeholder="Todos os clientes"
+          autocomplete="off"
+          oninput="onCliInput(this.value)"
+          onfocus="abrirCliDropdown()"
+          onkeydown="navCliDropdown(event)" />
+        <button class="cli-clear" id="cliClear" onclick="limparCliente()" title="Limpar filtro">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <div class="cli-dropdown" id="cliDropdown"></div>
+      </div>
     </div>
 
     <!-- KPI Cards -->
@@ -586,6 +638,8 @@
   let _pedidos = [];
   let _pagamentos = [];
   let _activeDays = 30;
+  let _clienteFiltro = '';
+  let _cliHl = -1;
 
   /* ── Chart colours ── */
   const PALETTE = [
@@ -603,14 +657,89 @@
     };
   }
 
-  /* ── Filter pagamentos by period ── */
+  /* ── Filter pagamentos by period + client ── */
   function filteredPagamentos() {
-    if (_activeDays === 0) return _pagamentos;
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - _activeDays);
-    const cutStr = cutoff.toISOString().slice(0, 10);
-    return _pagamentos.filter(p => p.data_pagamento && p.data_pagamento >= cutStr);
+    let list = _pagamentos;
+    if (_activeDays !== 0) {
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - _activeDays);
+      const cutStr = cutoff.toISOString().slice(0, 10);
+      list = list.filter(p => p.data_pagamento && p.data_pagamento >= cutStr);
+    }
+    if (_clienteFiltro) {
+      list = list.filter(p => p.cliente_nome === _clienteFiltro);
+    }
+    return list;
   }
+
+  /* ── Client dropdown helpers ── */
+  function listaClientes(busca) {
+    const nomes = [...new Set(_pagamentos.map(p => p.cliente_nome).filter(Boolean))].sort();
+    if (!busca) return nomes;
+    const b = busca.toLowerCase();
+    return nomes.filter(n => n.toLowerCase().includes(b));
+  }
+
+  function onCliInput(valor) {
+    _clienteFiltro = '';
+    document.getElementById('cliClear').style.display = 'none';
+    abrirCliDropdown(valor);
+  }
+
+  function abrirCliDropdown(busca) {
+    const dd = document.getElementById('cliDropdown');
+    const termo = busca !== undefined ? busca : document.getElementById('cliInput').value;
+    const lista = listaClientes(termo);
+    _cliHl = -1;
+
+    if (!lista.length) {
+      dd.innerHTML = '<div class="cli-dd-empty">Nenhum cliente encontrado.</div>';
+      dd.classList.add('open');
+      return;
+    }
+
+    const b = termo.toLowerCase();
+    dd.innerHTML = lista.map(n => {
+      const destaque = b
+        ? n.replace(new RegExp(`(${b.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'), '<strong>$1</strong>')
+        : n;
+      return `<div class="cli-dd-item" data-nome="${n.replace(/"/g,'&quot;')}" onclick="selecionarCliente(this.dataset.nome)">${destaque}</div>`;
+    }).join('');
+    dd.classList.add('open');
+  }
+
+  function selecionarCliente(nome) {
+    _clienteFiltro = nome;
+    document.getElementById('cliInput').value = nome;
+    document.getElementById('cliDropdown').classList.remove('open');
+    document.getElementById('cliClear').style.display = 'flex';
+    updateViews();
+  }
+
+  function limparCliente() {
+    _clienteFiltro = '';
+    document.getElementById('cliInput').value = '';
+    document.getElementById('cliClear').style.display = 'none';
+    document.getElementById('cliDropdown').classList.remove('open');
+    updateViews();
+  }
+
+  function navCliDropdown(e) {
+    const dd = document.getElementById('cliDropdown');
+    const items = dd.querySelectorAll('.cli-dd-item');
+    if (!dd.classList.contains('open') || !items.length) return;
+    if (e.key === 'ArrowDown')  { e.preventDefault(); _cliHl = Math.min(_cliHl + 1, items.length - 1); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); _cliHl = Math.max(_cliHl - 1, 0); }
+    else if (e.key === 'Enter')     { e.preventDefault(); if (_cliHl >= 0) items[_cliHl].click(); return; }
+    else if (e.key === 'Escape')    { dd.classList.remove('open'); return; }
+    items.forEach((el, i) => el.classList.toggle('hl', i === _cliHl));
+    if (_cliHl >= 0) items[_cliHl].scrollIntoView({ block: 'nearest' });
+  }
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#cliWrap'))
+      document.getElementById('cliDropdown').classList.remove('open');
+  });
 
   /* ── Render KPIs ── */
   function renderKPIs(mapFaturado, mapPago) {
