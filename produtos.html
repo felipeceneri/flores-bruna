@@ -615,7 +615,7 @@ function renderPage() {
       <svg viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       <div>
         <h3>Configure o Supabase para salvar na nuvem</h3>
-        <p>Dados salvos só neste navegador. Vá em <strong>Configurações</strong> e insira sua <code>URL</code> e <code>Anon Key</code> do Supabase.</p>
+        <p>Dados salvos só neste navegador. Vá em <strong>Configurações</strong> e insira sua <code>URL</code> e <code>Publishable Key</code> do Supabase.</p>
       </div>
     </div>` : ''}
     <div class="cadastro-layout">
@@ -762,19 +762,17 @@ function renderConfig() {
       <div class="config-card">
         <h3>Conexão Supabase</h3>
         <p style="margin-bottom:.5rem;">Acesse <a href="https://supabase.com" target="_blank" style="color:var(--accent);">supabase.com</a> → seu projeto → <strong>Settings → API Keys</strong>.</p>
-        <div style="background:rgba(239,159,39,.08);border:1px solid rgba(239,159,39,.3);border-radius:var(--radius);padding:.85rem 1rem;font-size:12px;color:var(--text-2);line-height:1.9;margin-bottom:1rem;">
-          <strong style="color:#EF9F27;display:block;margin-bottom:6px;">⚠️ Use a chave Legacy (formato eyJ...)</strong>
-          O SDK atual não suporta o novo formato <code style="background:rgba(0,0,0,.2);color:#ffd;padding:1px 5px;border-radius:3px;">sb_publishable_...</code>.<br/>
-          <b style="color:var(--text);">1. URL</b> → Settings → General → copie o <em>Project ID</em><br/>
-          <b style="color:var(--text);">2. Chave</b> → Settings → API Keys → aba <em>"Legacy"</em> → <b>anon</b> key
+        <div style="background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.3);border-radius:var(--radius);padding:.85rem 1rem;font-size:12px;color:var(--text-2);line-height:1.9;margin-bottom:1rem;">
+          <b style="color:var(--text);">1. URL</b> → Settings → General → <em>Project URL</em><br/>
+          <b style="color:var(--text);">2. Chave</b> → Settings → API Keys → <em>Publishable key</em> (<code style="background:rgba(0,0,0,.2);color:#ffd;padding:1px 5px;border-radius:3px;">sb_publishable_...</code>)
         </div>
         <div class="form-group">
           <label class="form-label">URL do projeto</label>
           <input class="form-input" id="cfg_url" type="text" placeholder="https://xxxx.supabase.co" value="${SUPABASE_URL}" />
         </div>
         <div class="form-group" style="margin-top:.75rem;">
-          <label class="form-label">Anon Key (eyJ...)</label>
-          <input class="form-input" id="cfg_key" type="text" placeholder="eyJhbGci..." value="${SUPABASE_KEY}" />
+          <label class="form-label">Publishable Key (sb_publishable_...)</label>
+          <input class="form-input" id="cfg_key" type="text" placeholder="sb_publishable_..." value="${SUPABASE_KEY}" />
         </div>
         <button class="btn-submit" onclick="saveConfig()" style="margin-top:1rem;">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/></svg>

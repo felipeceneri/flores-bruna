@@ -289,7 +289,7 @@
       <p>O campo <code>permissoes</code> é um array JSON com os valores: <code>"produtos"</code>, <code>"clientes"</code>, <code>"lancamento"</code>, <code>"pedidos"</code>, <code>"relatorios"</code>, <code>"usuarios"</code>.</p>
 
       <h3>Row Level Security (RLS)</h3>
-      <p>A tabela <code>usuarios</code> tem RLS ativado com política permissiva — o controle de acesso é feito na camada de aplicação (JavaScript). A chave pública (<em>anon key</em>) só permite as operações definidas pelas políticas.</p>
+      <p>A tabela <code>usuarios</code> tem RLS ativado com política permissiva — o controle de acesso é feito na camada de aplicação (JavaScript). A chave pública (<em>publishable key</em>) só permite as operações definidas pelas políticas.</p>
       <div class="warn-tip"><strong>Atenção:</strong> Para aumentar a segurança em produção, crie políticas RLS mais restritivas no Supabase limitando INSERT/UPDATE/DELETE apenas a usuários autenticados via Supabase Auth.</div>
     </div>
 
