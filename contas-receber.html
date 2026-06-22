@@ -174,6 +174,16 @@
     .btn-baixa:hover { background: rgba(79,111,255,.3); border-color: var(--accent); }
     .btn-baixa svg { width: 12px; height: 12px; }
     .btn-baixa:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-hist {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: .35rem .75rem; border-radius: 7px; font-size: 12px; font-weight: 600;
+      background: rgba(61,170,107,.12); border: 1px solid rgba(61,170,107,.25);
+      color: #5ad48a; cursor: pointer;
+      transition: background var(--transition), border-color var(--transition);
+    }
+    .btn-hist:hover { background: rgba(61,170,107,.25); border-color: var(--success); }
+    .btn-hist svg { width: 12px; height: 12px; }
+    .action-cell { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; }
 
     /* ── EMPTY STATE ── */
     .empty-state {
@@ -538,6 +548,25 @@
   </div>
 </div>
 
+<!-- MODAL HISTÓRICO -->
+<div class="overlay" id="histModalOverlay">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Histórico de Pagamentos</div>
+        <div id="histModalSub" style="font-size:12px;color:var(--text-3);margin-top:2px;"></div>
+      </div>
+      <button class="modal-close" onclick="fecharHistorico()">×</button>
+    </div>
+    <div class="modal-body" style="padding:1.25rem 1.5rem;">
+      <div id="histModalContent"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="fecharHistorico()">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
 
@@ -686,10 +715,16 @@
         <td class="${saldoClass}">${fmt(r.saldo)}</td>
         <td>${statusBadge(r.status)}</td>
         <td>
-          <button class="btn-baixa" onclick="abrirModal(${r.id})" ${btnDisabled}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            Dar Baixa
-          </button>
+          <div class="action-cell">
+            <button class="btn-baixa" onclick="abrirModal(${r.id})" ${btnDisabled}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              Dar Baixa
+            </button>
+            <button class="btn-hist" onclick="abrirHistorico(${r.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Histórico
+            </button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -758,6 +793,62 @@
     document.getElementById('modalOverlay').classList.remove('open');
     pedidoAtivo = null;
     pagamentosAtivos = [];
+  }
+
+  /* ── HISTÓRICO ── */
+  async function abrirHistorico(pedidoId) {
+    const reg = registros.find(r => r.id === pedidoId);
+    if (!reg) return;
+
+    const sub = document.getElementById('histModalSub');
+    sub.textContent = '#' + String(reg.id).padStart(5,'0') + ' · ' + (reg.cliente_nome || '');
+
+    const cont = document.getElementById('histModalContent');
+    cont.innerHTML = '<div class="hist-empty">Carregando…</div>';
+    document.getElementById('histModalOverlay').classList.add('open');
+
+    if (!sb) { cont.innerHTML = '<div class="hist-empty">Banco indisponível.</div>'; return; }
+
+    const { data, error } = await sb
+      .from('SE2')
+      .select('valor_pago, forma_pagamento, data_pagamento, observacao')
+      .eq('pedido_id', pedidoId)
+      .order('data_pagamento', { ascending: true });
+
+    if (error || !data || !data.length) {
+      cont.innerHTML = '<div class="hist-empty" style="padding:1.5rem 0;text-align:center;color:var(--text-3);">Nenhum pagamento registrado para este pedido.</div>';
+      return;
+    }
+
+    const totalPago = data.reduce((s, pg) => s + Number(pg.valor_pago || 0), 0);
+
+    cont.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table class="hist-table" style="width:100%;">
+          <thead><tr>
+            <th>Data</th>
+            <th>Forma de Pagamento</th>
+            <th style="text-align:right;">Valor Pago</th>
+            <th>Observação</th>
+          </tr></thead>
+          <tbody>
+            ${data.map(pg => `<tr>
+              <td style="white-space:nowrap;">${fmtDate(pg.data_pagamento)}</td>
+              <td>${esc(pg.forma_pagamento)}</td>
+              <td class="hist-valor" style="text-align:right;white-space:nowrap;">${fmt(pg.valor_pago)}</td>
+              <td style="color:var(--text-3);font-size:11px;">${esc(pg.observacao || '—')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:1rem;padding:.75rem 1rem;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:12px;color:var(--text-3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;">${data.length} pagamento(s) registrado(s)</span>
+        <span style="font-size:15px;font-weight:700;color:var(--success);">${fmt(totalPago)} recebido(s)</span>
+      </div>`;
+  }
+
+  function fecharHistorico() {
+    document.getElementById('histModalOverlay').classList.remove('open');
   }
 
   /* ── REGISTRAR PAGAMENTO ── */
