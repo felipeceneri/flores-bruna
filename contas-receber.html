@@ -120,7 +120,22 @@
 
     /* ── TOOLBAR ── */
     .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 1rem; flex-wrap: wrap; }
+    .toolbar-left { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
     .filter-tabs { display: flex; gap: .25rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: .25rem; }
+    .search-cliente {
+      display: flex; align-items: center; gap: 7px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .35rem .75rem;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+    .search-cliente:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(79,111,255,.12); }
+    .search-cliente svg { width: 14px; height: 14px; color: var(--text-3); flex-shrink: 0; }
+    .search-cliente input {
+      background: none; border: none; outline: none;
+      font-family: var(--font); font-size: 13px; color: var(--text);
+      width: 180px;
+    }
+    .search-cliente input::placeholder { color: var(--text-3); }
     .filter-tab {
       padding: .4rem .9rem; border-radius: 7px; font-size: 12.5px; font-weight: 500;
       color: var(--text-2); cursor: pointer; border: none; background: none;
@@ -423,11 +438,17 @@
 
       <!-- TOOLBAR -->
       <div class="toolbar">
-        <div class="filter-tabs">
-          <button class="filter-tab active" onclick="setFiltro('todos', this)">Todos</button>
-          <button class="filter-tab" onclick="setFiltro('pendente', this)">Pendente</button>
-          <button class="filter-tab" onclick="setFiltro('parcial', this)">Pago Parcial</button>
-          <button class="filter-tab" onclick="setFiltro('pago', this)">Pago</button>
+        <div class="toolbar-left">
+          <div class="filter-tabs">
+            <button class="filter-tab active" onclick="setFiltro('todos', this)">Todos</button>
+            <button class="filter-tab" onclick="setFiltro('pendente', this)">Pendente</button>
+            <button class="filter-tab" onclick="setFiltro('parcial', this)">Pago Parcial</button>
+            <button class="filter-tab" onclick="setFiltro('pago', this)">Pago</button>
+          </div>
+          <div class="search-cliente">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            <input type="text" id="filtroClienteInput" placeholder="Buscar cliente…" oninput="setFiltroCliente(this.value)" />
+          </div>
         </div>
         <span class="count-badge" id="countBadge">0 registros</span>
       </div>
@@ -581,6 +602,7 @@
   let sb = null;
   let registros = [];
   let filtroAtual = 'todos';
+  let filtroCliente = '';
   let pedidoAtivo = null;
   let pagamentosAtivos = [];
 
@@ -692,11 +714,20 @@
     renderTabela();
   }
 
+  function setFiltroCliente(val) {
+    filtroCliente = val.trim().toLowerCase();
+    renderTabela();
+  }
+
   /* ── RENDER ── */
   function renderTabela() {
-    const lista = filtroAtual === 'todos'
+    let lista = filtroAtual === 'todos'
       ? registros
       : registros.filter(r => r.status === filtroAtual);
+
+    if (filtroCliente) {
+      lista = lista.filter(r => (r.cliente_nome || '').toLowerCase().includes(filtroCliente));
+    }
 
     document.getElementById('countBadge').textContent = lista.length + (lista.length === 1 ? ' registro' : ' registros');
 
