@@ -226,6 +226,31 @@
     }
     .lista-header-title { font-size: 13px; font-weight: 600; }
     .lista-count { font-size: 11px; color: var(--text-3); background: var(--surface2); padding: 2px 9px; border-radius: 20px; }
+    .search-wrap { position: relative; }
+    .search-wrap svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 13px; height: 13px; fill: var(--text-3); pointer-events: none; }
+    .search-input {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .45rem .75rem .45rem 28px;
+      font-size: 12px; color: var(--text); outline: none; width: 190px;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-3); }
+    .filtro-status-select {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: .45rem .75rem;
+      font-size: 12px; color: var(--text); outline: none;
+      transition: border-color var(--transition);
+    }
+    .filtro-status-select:focus { border-color: var(--accent); }
+    .estoque-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 600;
+      padding: 3px 9px; border-radius: 20px;
+    }
+    .estoque-ok   { color: var(--success); background: rgba(61,170,107,.12); border: 1px solid rgba(61,170,107,.25); }
+    .estoque-warn { color: #EF9F27;       background: rgba(239,159,39,.12);  border: 1px solid rgba(239,159,39,.25); }
+    .estoque-zero { color: var(--danger); background: rgba(226,75,74,.12);   border: 1px solid rgba(226,75,74,.25); }
     .lista-table-wrap { overflow-x: auto; max-height: 580px; overflow-y: auto; }
     table { width: 100%; border-collapse: collapse; }
     thead th {
@@ -315,6 +340,9 @@
     [data-device="mobile"] .period-tab { padding: 7px 10px !important; min-height: 34px; }
     [data-device="mobile"] .client-filter-wrap { min-width: 100% !important; }
     [data-device="mobile"] .filters-bar { flex-direction: column; align-items: flex-start !important; }
+    [data-device="mobile"] .search-input { width: 100% !important; }
+    [data-device="mobile"] .lista-header { flex-direction: column; align-items: flex-start !important; }
+    [data-device="mobile"] .lista-header > div { width: 100%; }
     [data-device="mobile"] .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
     [data-device="mobile"] .charts-row,
     [data-device="mobile"] .charts-row-3 { grid-template-columns: 1fr !important; }
@@ -546,6 +574,40 @@
         </div>
 
       </div>
+
+      <!-- ── ESTOQUE ATUAL POR PRODUTO ── -->
+      <div class="lista-card" style="margin-top:1.25rem;">
+        <div class="lista-header">
+          <span class="lista-header-title">Estoque atual por produto</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span class="lista-count" id="estoqueCount">0 produtos</span>
+            <select class="filtro-status-select" id="f_filtro_status_estoque" onchange="onFiltroStatusEstoque(this.value)">
+              <option value="todos">Todos os status</option>
+              <option value="ok">Em estoque</option>
+              <option value="baixo">Estoque baixo (≤ 5)</option>
+              <option value="zero">Sem estoque</option>
+            </select>
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24"><path d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/></svg>
+              <input class="search-input" type="search" placeholder="Buscar produto, tamanho ou cor..." oninput="onBuscaEstoque(this.value)" />
+            </div>
+          </div>
+        </div>
+        <div class="lista-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Cód.</th>
+                <th>Produto</th>
+                <th>Tam.</th>
+                <th>Cor</th>
+                <th>Qtd. em estoque</th>
+              </tr>
+            </thead>
+            <tbody id="estoqueTbody"></tbody>
+          </table>
+        </div>
+      </div>
     </main>
   </div>
 </div>
@@ -592,6 +654,9 @@ let todosProdutos    = [];   // { id, codigo, nome, tamanho, cor }
 let produtoEscolhido = null;
 let lancamentos      = [];
 let highlightIdx     = -1;
+let estoqueProdutos      = [];   // { id, codigo, nome, tamanho, cor, estoque }
+let termoBuscaEstoque    = '';
+let filtroStatusEstoque  = 'todos';
 
 /* ── CARREGAR PRODUTOS DA TABELA produtos ── */
 async function carregarProdutos() {
@@ -602,6 +667,84 @@ async function carregarProdutos() {
     .order('nome');
   if (error) { showToast('Erro ao carregar produtos: ' + error.message, 'error'); return; }
   todosProdutos = data || [];
+}
+
+/* ── ESTOQUE ATUAL POR PRODUTO ── */
+async function carregarEstoqueAtual() {
+  if (!sb) return;
+  const { data, error } = await sb.from('SB2').select('produto_id, quantidade').eq('tipo_entrada', 'Entrada');
+  if (error) { showToast('Erro ao carregar estoque: ' + error.message, 'error'); return; }
+
+  const somaPorProduto = {};
+  (data || []).forEach(r => {
+    somaPorProduto[r.produto_id] = (somaPorProduto[r.produto_id] || 0) + r.quantidade;
+  });
+
+  estoqueProdutos = todosProdutos
+    .map(p => ({
+      id:      p.id,
+      codigo:  p.codigo,
+      nome:    p.nome,
+      tamanho: p.tamanho,
+      cor:     p.cor,
+      estoque: somaPorProduto[p.id] || 0,
+    }))
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+
+  renderEstoqueTabela();
+}
+
+function onBuscaEstoque(v) { termoBuscaEstoque = v; renderEstoqueTabela(); }
+function onFiltroStatusEstoque(v) { filtroStatusEstoque = v; renderEstoqueTabela(); }
+
+function renderEstoqueTabela() {
+  const tbody = document.getElementById('estoqueTbody');
+  const count = document.getElementById('estoqueCount');
+  if (!tbody || !count) return;
+
+  let lista = estoqueProdutos;
+
+  const termo = termoBuscaEstoque.toLowerCase().trim();
+  if (termo) {
+    lista = lista.filter(p =>
+      p.nome.toLowerCase().includes(termo) ||
+      (p.tamanho || '').toLowerCase().includes(termo) ||
+      (p.cor     || '').toLowerCase().includes(termo)
+    );
+  }
+
+  if (filtroStatusEstoque === 'ok')    lista = lista.filter(p => p.estoque > 5);
+  if (filtroStatusEstoque === 'baixo') lista = lista.filter(p => p.estoque > 0 && p.estoque <= 5);
+  if (filtroStatusEstoque === 'zero')  lista = lista.filter(p => p.estoque <= 0);
+
+  count.textContent = lista.length + (lista.length === 1 ? ' produto' : ' produtos');
+
+  if (!lista.length) {
+    tbody.innerHTML = `
+      <tr><td colspan="5">
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <p>${estoqueProdutos.length === 0 ? 'Nenhum produto cadastrado.' : 'Nenhum resultado.'}</p>
+          <small>${estoqueProdutos.length === 0 ? 'Cadastre produtos na tela de Produtos.' : 'Tente outro termo ou status.'}</small>
+        </div>
+      </td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(p => {
+    let badgeClass = 'estoque-ok';
+    let label = p.estoque + ' un.';
+    if (p.estoque <= 0) { badgeClass = 'estoque-zero'; label = 'Sem estoque'; }
+    else if (p.estoque <= 5) { badgeClass = 'estoque-warn'; }
+    return `
+      <tr>
+        <td class="td-code">#${String(p.codigo).padStart(5,'0')}</td>
+        <td class="td-name">${esc(p.nome)}</td>
+        <td class="td-muted">${esc(p.tamanho || '—')}</td>
+        <td class="td-muted">${esc(p.cor     || '—')}</td>
+        <td><span class="estoque-badge ${badgeClass}">${label}</span></td>
+      </tr>`;
+  }).join('');
 }
 
 /* ── AUTOCOMPLETE ── */
@@ -729,6 +872,7 @@ async function submeterLancamento(e) {
   document.getElementById('f_qtd').value = '';
   limparSelecao();
   await carregarLancamentos();
+  await carregarEstoqueAtual();
 }
 
 /* ── CARREGAR E RENDERIZAR LANÇAMENTOS DA SB2 ── */
@@ -856,9 +1000,11 @@ sdkScript.onload = async () => {
     initSupabase();
     await carregarProdutos();
     await carregarLancamentos();
+    await carregarEstoqueAtual();
   } else {
     document.getElementById('alertSemBanco').classList.add('show');
     renderTabela();
+    renderEstoqueTabela();
   }
 };
 sdkScript.onerror = () => renderTabela();
