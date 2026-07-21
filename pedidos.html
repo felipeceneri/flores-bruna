@@ -375,6 +375,35 @@
       border-radius:20px; padding:3px 8px; white-space:nowrap; cursor:default; }
     .badge-entregue svg { width:11px; height:11px; }
 
+    .btn-icon-row {
+      background: none; border: none; cursor: pointer; color: var(--text-3);
+      padding: 5px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+      transition: background var(--transition), color var(--transition);
+    }
+    .btn-icon-row svg { width: 14px; height: 14px; }
+    .btn-editar-pedido:hover  { background: rgba(79,111,255,.15); color: var(--accent); }
+    .btn-excluir-pedido:hover { background: rgba(226,75,74,.15);  color: var(--danger); }
+
+    /* ── MODAL CONFIRMAR EXCLUSÃO DE PEDIDO ── */
+    .modal-confirm {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.75rem;
+      width: 100%; max-width: 400px;
+      transform: translateY(16px); transition: transform var(--transition);
+      box-shadow: var(--shadow);
+    }
+    .overlay.open .modal-confirm { transform: translateY(0); }
+    .modal-confirm-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .modal-confirm-title  { font-size: 14px; font-weight: 600; }
+    .modal-confirm-close  { background: var(--surface2); border: none; color: var(--text-2); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .modal-confirm-close:hover { background: var(--border); }
+    .modal-confirm-close svg { width: 13px; height: 13px; }
+    .confirm-msg { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 1.25rem; }
+    .confirm-msg strong { color: var(--text); }
+    .modal-confirm-footer { display: flex; justify-content: flex-end; gap: .75rem; }
+    .btn-danger-solid { background: var(--danger); color: #fff; border: none; }
+    .btn-danger-solid:hover { background: #c73b3a; }
+
     /* ── MODAL DETALHES ── */
     .overlay {
       position: fixed; inset: 0; z-index: 400;
@@ -574,7 +603,8 @@
     [data-device="mobile"] .cadastro-layout { grid-template-columns: 1fr !important; }
     [data-device="mobile"] .btn-action { min-height: 38px; padding: .45rem .85rem !important; font-size: 12px; }
     [data-device="mobile"] .btn-icon,
-    [data-device="mobile"] .btn-edit { min-width: 38px; min-height: 38px; padding: 8px !important; }
+    [data-device="mobile"] .btn-edit,
+    [data-device="mobile"] .btn-icon-row { min-width: 38px; min-height: 38px; padding: 8px !important; }
     [data-device="mobile"] .form-input,
     [data-device="mobile"] .form-select { font-size: 16px !important; padding: .75rem 1rem !important; }
     [data-device="mobile"] .lista-table-wrap,
@@ -702,7 +732,7 @@
           <div class="form-card">
             <div class="form-card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><path d="M9 5a2 2 0 002 2h2a2 2 0 002-2"/><path d="M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-              Novo Pedido
+              <span id="formCardTitle">Novo Pedido</span>
             </div>
 
             <div class="alert-warn" id="alertSemBanco">
@@ -715,7 +745,7 @@
                 <div class="codigo-label">Código do pedido</div>
                 <div class="codigo-value" id="codigoDisplay">#—</div>
               </div>
-              <span class="codigo-badge">Automático</span>
+              <span class="codigo-badge" id="codigoBadge">Automático</span>
             </div>
 
             <!-- ── SEÇÃO CLIENTE ── -->
@@ -959,6 +989,26 @@
   </div>
 </div>
 
+<!-- MODAL CONFIRMAR EXCLUSÃO DE PEDIDO -->
+<div class="overlay" id="confirmModalPedido" role="dialog" aria-modal="true">
+  <div class="modal-confirm">
+    <div class="modal-confirm-header">
+      <h2 class="modal-confirm-title">Excluir pedido</h2>
+      <button class="modal-confirm-close" onclick="fecharModalPedido()" aria-label="Fechar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="confirm-msg">Tem certeza que deseja excluir o pedido <strong id="confirmExcluirCodigo"></strong>? O estoque dos itens será devolvido automaticamente. Esta ação não pode ser desfeita.</p>
+    <div class="modal-confirm-footer">
+      <button class="btn btn-ghost" onclick="fecharModalPedido()">Cancelar</button>
+      <button class="btn btn-danger-solid" id="btnConfirmarExclusaoPedido">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        Excluir
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -1005,6 +1055,8 @@ let itensPedido        = [];
 let pedidos            = [];
 let termoBusca         = '';
 let hlCli = -1, hlProd = -1;
+let editandoPedidoId   = null;
+let itensOriginaisEdicao = [];
 
 /* ── CÓDIGO AUTOMÁTICO ── */
 async function atualizarProximoCodigo() {
@@ -1362,6 +1414,11 @@ async function salvarPedido() {
   if (!clienteSelecionado)   { showToast('Selecione um cliente.', 'error'); document.getElementById('f_busca_cli').focus(); return; }
   if (!itensPedido.length)   { showToast('Adicione pelo menos um item ao pedido.', 'error'); return; }
 
+  if (editandoPedidoId) {
+    await atualizarPedidoExistente(editandoPedidoId);
+    return;
+  }
+
   const btn = document.getElementById('btnSalvar');
   btn.disabled = true;
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Salvando...';
@@ -1437,19 +1494,24 @@ async function salvarPedido() {
   }
 
   await carregarPedidos();
+  await carregarProdutos();
   await atualizarProximoCodigo();
 }
 
-function restaurarBotao() {
+function restaurarBotao(label = 'Salvar Pedido') {
   document.getElementById('btnSalvar').innerHTML = `
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
       <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
       <polyline points="17 21 17 13 7 13 7 21"/>
       <polyline points="7 3 7 8 15 8"/>
-    </svg> Salvar Pedido`;
+    </svg> ${label}`;
+  document.getElementById('btnSalvar').disabled = false;
 }
 
 function cancelarPedido() {
+  const estavaEditando = !!editandoPedidoId;
+  editandoPedidoId = null;
+  itensOriginaisEdicao = [];
   clienteSelecionado = null;
   produtoSelecionado = null;
   estoqueAtual = 0;
@@ -1463,6 +1525,241 @@ function cancelarPedido() {
   document.getElementById('clientePanel').classList.remove('show');
   document.getElementById('estoqueBadge').style.display = 'none';
   renderItensPedido();
+
+  if (estavaEditando) {
+    document.getElementById('formCardTitle').textContent = 'Novo Pedido';
+    document.getElementById('codigoBadge').textContent   = 'Automático';
+    restaurarBotao('Salvar Pedido');
+    atualizarProximoCodigo();
+  }
+}
+
+/* ── EDITAR PEDIDO (somente se não entregue) ── */
+function editarPedido(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  if (p.entregue) { showToast('Pedido já entregue não pode ser editado.', 'error'); return; }
+
+  editandoPedidoId = id;
+
+  clienteSelecionado = { id: p.cliente_id, nome: p.cliente_nome, celular: p.cliente_celular };
+  document.getElementById('f_busca_cli').value      = p.cliente_nome    || '';
+  document.getElementById('cp_nome').textContent    = p.cliente_nome    || '—';
+  document.getElementById('cp_celular').textContent = p.cliente_celular || '—';
+  document.getElementById('clientePanel').classList.add('show');
+
+  itensPedido = (p.SC6 || []).map(i => ({
+    produto_id:     i.produto_id,
+    produto_nome:   i.produto_nome,
+    produto_codigo: i.produto_codigo,
+    tamanho:        i.tamanho,
+    cor:            i.cor,
+    quantidade:     i.quantidade,
+    valor_unitario: parseFloat(i.valor_unitario) || 0,
+    valor_total:    parseFloat(i.valor_total)    || 0,
+  }));
+  itensOriginaisEdicao = itensPedido.map(i => ({ ...i }));
+  renderItensPedido();
+
+  document.getElementById('f_obs').value = p.observacao || '';
+
+  produtoSelecionado = null;
+  estoqueAtual = 0;
+  document.getElementById('f_busca_prod').value = '';
+  document.getElementById('f_qtd_item').value   = '';
+  document.getElementById('f_valor_unit').value = '';
+  document.getElementById('valorTotalValor').textContent = 'R$ 0,00';
+  document.getElementById('estoqueBadge').style.display = 'none';
+
+  document.getElementById('codigoDisplay').textContent = '#' + String(p.id).padStart(5, '0');
+  document.getElementById('codigoBadge').textContent   = 'Editando';
+  document.getElementById('formCardTitle').textContent = 'Editar Pedido';
+  restaurarBotao('Atualizar Pedido');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  showToast('Editando pedido #' + String(p.id).padStart(5, '0') + '. Altere os dados e clique em Atualizar.', 'info');
+}
+
+/* ── ATUALIZAR PEDIDO EXISTENTE (itens + estoque) ── */
+async function atualizarPedidoExistente(id) {
+  const btn = document.getElementById('btnSalvar');
+  btn.disabled = true;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Atualizando...';
+
+  // Verifica se o pedido ainda pode ser editado (não foi marcado como entregue nesse meio tempo)
+  const pAtual = pedidos.find(x => x.id === id);
+  if (pAtual && pAtual.entregue) {
+    showToast('Este pedido foi entregue e não pode mais ser editado.', 'error');
+    btn.disabled = false; restaurarBotao('Atualizar Pedido'); cancelarPedido(); return;
+  }
+
+  // Soma quantidades por produto (original x novo) para calcular o saldo de estoque
+  const origPorProduto = {};
+  for (const i of itensOriginaisEdicao) {
+    origPorProduto[i.produto_id] = (origPorProduto[i.produto_id] || 0) + i.quantidade;
+  }
+  const novoPorProduto = {};
+  for (const i of itensPedido) {
+    novoPorProduto[i.produto_id] = (novoPorProduto[i.produto_id] || 0) + i.quantidade;
+  }
+  const produtosAfetados = [...new Set([...Object.keys(origPorProduto), ...Object.keys(novoPorProduto)])].map(Number);
+
+  // Valida estoque disponível para qualquer aumento de quantidade
+  for (const pid of produtosAfetados) {
+    const orig  = origPorProduto[pid] || 0;
+    const novo  = novoPorProduto[pid] || 0;
+    const extra = novo - orig;
+    if (extra > 0) {
+      const disponivel = await calcularEstoque(pid);
+      if (disponivel < extra) {
+        const item = itensPedido.find(i => i.produto_id === pid);
+        showToast('Estoque insuficiente para "' + (item ? item.produto_nome : 'produto') + '". Disponível: ' + disponivel + '.', 'error');
+        btn.disabled = false; restaurarBotao('Atualizar Pedido'); return;
+      }
+    }
+  }
+
+  const obs = document.getElementById('f_obs').value.trim() || null;
+
+  // 1) Atualiza os dados do pedido
+  const { error: errUpd } = await sb.from('SC5').update({
+    cliente_id:      clienteSelecionado.id,
+    cliente_nome:    clienteSelecionado.nome,
+    cliente_celular: clienteSelecionado.celular || null,
+    observacao:      obs,
+  }).eq('id', id);
+
+  if (errUpd) {
+    showToast('Erro ao atualizar pedido: ' + errUpd.message, 'error');
+    btn.disabled = false; restaurarBotao('Atualizar Pedido'); return;
+  }
+
+  // 2) Substitui os itens (remove os antigos e insere os novos)
+  const { error: errDel } = await sb.from('SC6').delete().eq('pedido_id', id);
+  if (errDel) {
+    showToast('Erro ao atualizar itens do pedido: ' + errDel.message, 'error');
+    btn.disabled = false; restaurarBotao('Atualizar Pedido'); return;
+  }
+
+  const { error: errIns } = await sb.from('SC6').insert(
+    itensPedido.map(i => ({
+      pedido_id:      id,
+      produto_id:     i.produto_id,
+      produto_nome:   i.produto_nome,
+      produto_codigo: i.produto_codigo,
+      tamanho:        i.tamanho || null,
+      cor:            i.cor     || null,
+      quantidade:     i.quantidade,
+      valor_unitario: i.valor_unitario || 0,
+      valor_total:    i.valor_total    || 0,
+    }))
+  );
+
+  if (errIns) {
+    showToast('Erro ao salvar os novos itens do pedido: ' + errIns.message, 'error');
+    btn.disabled = false; restaurarBotao('Atualizar Pedido'); return;
+  }
+
+  // 3) Ajusta o estoque: devolve o que foi reduzido/removido e baixa o que foi acrescentado
+  const hoje = new Date().toISOString().split('T')[0];
+  let erroEstoque = false;
+  for (const pid of produtosAfetados) {
+    const orig = origPorProduto[pid] || 0;
+    const novo = novoPorProduto[pid] || 0;
+    const diff = novo - orig;
+    if (diff === 0) continue;
+
+    if (diff > 0) {
+      const ok = await darBaixaEstoque(pid, diff);
+      if (!ok) { erroEstoque = true; break; }
+    } else {
+      const itemRef = itensPedido.find(i => i.produto_id === pid) || itensOriginaisEdicao.find(i => i.produto_id === pid);
+      const { error: errDevol } = await sb.from('SB2').insert([{
+        produto_id:      pid,
+        produto_nome:    itemRef ? itemRef.produto_nome   : '',
+        produto_codigo:  itemRef ? itemRef.produto_codigo  : 0,
+        tamanho:         itemRef ? (itemRef.tamanho || null) : null,
+        cor:             itemRef ? (itemRef.cor || null)     : null,
+        tipo_entrada:    'Entrada',
+        quantidade:      -diff,
+        data_lancamento: hoje,
+      }]);
+      if (errDevol) { erroEstoque = true; break; }
+    }
+  }
+
+  btn.disabled = false; restaurarBotao('Atualizar Pedido');
+
+  if (erroEstoque) {
+    showToast('Pedido atualizado, mas houve erro ao ajustar o estoque. Verifique os lançamentos.', 'error');
+  } else {
+    showToast('Pedido atualizado e estoque ajustado com sucesso!', 'success');
+  }
+
+  cancelarPedido();
+  await carregarPedidos();
+  await carregarProdutos();
+  await atualizarProximoCodigo();
+}
+
+/* ── EXCLUIR PEDIDO (somente se não entregue) ── */
+function excluirPedido(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  if (p.entregue) { showToast('Pedido já entregue não pode ser excluído.', 'error'); return; }
+
+  document.getElementById('confirmExcluirCodigo').textContent = '#' + String(id).padStart(5, '0');
+  document.getElementById('confirmModalPedido').classList.add('open');
+  document.getElementById('btnConfirmarExclusaoPedido').onclick = async () => {
+    fecharModalPedido();
+    await executarExclusaoPedido(id);
+  };
+}
+
+function fecharModalPedido() { document.getElementById('confirmModalPedido').classList.remove('open'); }
+
+document.getElementById('confirmModalPedido').addEventListener('click', e => {
+  if (e.target === e.currentTarget) fecharModalPedido();
+});
+
+async function executarExclusaoPedido(id) {
+  const p = pedidos.find(x => x.id === id);
+  if (!p) return;
+  if (p.entregue) { showToast('Pedido já entregue não pode ser excluído.', 'error'); return; }
+
+  const itens = p.SC6 || [];
+  const hoje  = new Date().toISOString().split('T')[0];
+
+  // Devolve ao estoque a quantidade de cada item do pedido
+  for (const i of itens) {
+    const { error } = await sb.from('SB2').insert([{
+      produto_id:      i.produto_id,
+      produto_nome:    i.produto_nome,
+      produto_codigo:  i.produto_codigo,
+      tamanho:         i.tamanho || null,
+      cor:             i.cor     || null,
+      tipo_entrada:    'Entrada',
+      quantidade:      i.quantidade,
+      data_lancamento: hoje,
+    }]);
+    if (error) {
+      showToast('Erro ao devolver estoque do item "' + i.produto_nome + '": ' + error.message, 'error');
+      return;
+    }
+  }
+
+  const { error: errItens } = await sb.from('SC6').delete().eq('pedido_id', id);
+  if (errItens) { showToast('Erro ao remover itens do pedido: ' + errItens.message, 'error'); return; }
+
+  const { error: errPedido } = await sb.from('SC5').delete().eq('id', id);
+  if (errPedido) { showToast('Erro ao remover pedido: ' + errPedido.message, 'error'); return; }
+
+  showToast('Pedido excluído e estoque devolvido!', 'success');
+  if (editandoPedidoId === id) cancelarPedido();
+
+  await carregarPedidos();
+  await carregarProdutos();
+  await atualizarProximoCodigo();
 }
 
 /* ── MARCAR ENTREGUE ── */
@@ -1504,7 +1801,7 @@ async function carregarPedidos() {
   if (!sb) return;
   const { data, error } = await sb
     .from('SC5')
-    .select('id, cliente_nome, cliente_celular, data_pedido, observacao, entregue, SC6(produto_nome, produto_codigo, tamanho, cor, quantidade, valor_unitario, valor_total)')
+    .select('id, cliente_id, cliente_nome, cliente_celular, data_pedido, observacao, entregue, SC6(id, produto_id, produto_nome, produto_codigo, tamanho, cor, quantidade, valor_unitario, valor_total)')
     .order('created_at', { ascending: false })
     .limit(100);
   if (error) { showToast('Erro ao carregar pedidos: ' + error.message, 'error'); return; }
@@ -1553,11 +1850,18 @@ function renderPedidos() {
         <td class="td-date">${data}</td>
         <td class="td-muted">${p.observacao ? esc(p.observacao.slice(0,40)) + (p.observacao.length > 40 ? '…' : '') : '<span style="color:var(--text-3)">—</span>'}</td>
         <td style="white-space:nowrap;">
-          <div style="display:flex;gap:.4rem;align-items:center;">
+          <div style="display:flex;gap:.35rem;align-items:center;">
           <button class="btn-action btn-view" onclick="abrirDetalhes(${p.id})">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             Ver
           </button>
+          ${!p.entregue ? `
+          <button class="btn-icon-row btn-editar-pedido" onclick="editarPedido(${p.id})" title="Editar pedido">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+          <button class="btn-icon-row btn-excluir-pedido" onclick="excluirPedido(${p.id})" title="Excluir pedido">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          </button>` : ''}
           ${p.entregue
             ? `<span class="badge-entregue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Entregue</span>`
             : `<button class="btn-action btn-pendente" onclick="marcarEntregue(${p.id})" title="Clique para confirmar entrega">
@@ -1629,7 +1933,7 @@ function fecharDetalhes() {
 document.getElementById('detOverlay').addEventListener('click', e => {
   if (e.target === e.currentTarget) fecharDetalhes();
 });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharDetalhes(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { fecharDetalhes(); fecharModalPedido(); } });
 
 function imprimirPedido() {
   const id = document.getElementById('detOverlay')._pedidoId;
